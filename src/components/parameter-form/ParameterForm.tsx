@@ -25,7 +25,8 @@ export default function ParameterForm({
   selectedPlotType = "time-series",
   initialValues,
 }: ParameterFormProps) {
-  const { data: meterList } = useMeterList();
+  const { data: meterList, isFetched: meterListFetched } = useMeterList();
+  const datasetReady = (meterList?.meters.length ?? 0) > 0;
   const form = useParameterForm({
     resetSignal,
     initialValues,
@@ -51,6 +52,16 @@ export default function ParameterForm({
       <ParameterFormHeader />
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {meterListFetched && !datasetReady && (
+          <div
+            role="alert"
+            className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-900 dark:text-amber-200"
+          >
+            No energy dataset is loaded. Expand <strong>Dataset</strong> above and
+            upload your CSV and holiday JSON before running analysis.
+          </div>
+        )}
+
         {selectedPlotType === "eda-plots" && (
           <EdaRouteSelector form={form} />
         )}
@@ -74,7 +85,7 @@ export default function ParameterForm({
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || (meterListFetched && !datasetReady)}
             className="w-full px-6 py-3 text-base font-semibold bg-[#ba0c2f] text-white rounded-lg hover:bg-[#9a0a26] focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
           >
             {isLoading ? (

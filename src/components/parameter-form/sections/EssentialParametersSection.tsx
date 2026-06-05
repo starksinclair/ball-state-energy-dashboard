@@ -101,7 +101,7 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
               >
                 Meter
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                  Select a form.meter or create a group below
+                  Select a meter or create a group below
                 </span>
               </label>
               <select
@@ -111,7 +111,11 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                 required
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white transition-all"
               >
-                <option value="">Select a form.meter...</option>
+                <option value="">
+                  {form.allMeters.length === 0
+                    ? "No meters — upload dataset first"
+                    : "Select a meter…"}
+                </option>
                 {form.allMeters.map((meterOption) => (
                   <option key={meterOption} value={meterOption}>
                     {meterOption}

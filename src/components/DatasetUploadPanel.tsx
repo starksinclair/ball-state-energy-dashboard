@@ -25,7 +25,9 @@ export default function DatasetUploadPanel() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: datasetInfo, isLoading: infoLoading } = useDatasetInfo();
+  const { data: datasetInfo, isLoading: infoLoading, isFetched } =
+    useDatasetInfo();
+  const hasDataset = (datasetInfo?.meters.length ?? 0) > 0;
   const upload = useDatasetUpload();
 
   const handleCsvChange = (file: File | null) => {
@@ -98,12 +100,14 @@ export default function DatasetUploadPanel() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {infoLoading
                 ? "Loading dataset info…"
-                : datasetInfo
-                  ? `${datasetInfo.meters.length} meters · ${formatDateRange(
-                      datasetInfo.time_range?.start,
-                      datasetInfo.time_range?.end,
+                : hasDataset
+                  ? `${datasetInfo!.meters.length} meters · ${formatDateRange(
+                      datasetInfo!.time_range?.start,
+                      datasetInfo!.time_range?.end,
                     )}`
-                  : "Upload energy CSV + holiday JSON"}
+                  : isFetched
+                    ? "No dataset loaded — upload CSV + JSON"
+                    : "Upload energy CSV + holiday JSON"}
             </p>
           </div>
         </div>
@@ -124,7 +128,14 @@ export default function DatasetUploadPanel() {
 
       {expanded && (
         <div className="px-6 pb-6 space-y-5 border-t border-gray-200 dark:border-gray-700 pt-4">
-          {datasetInfo && (
+          {!hasDataset && isFetched && (
+            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-200">
+              Default CSV not found. Upload <strong>All_AptMeters.csv</strong> and{" "}
+              <strong>HOLIDAYDICT.json</strong> to enable meters and analysis.
+            </div>
+          )}
+
+          {hasDataset && datasetInfo && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Meters</p>
@@ -141,13 +152,13 @@ export default function DatasetUploadPanel() {
                   )}
                 </p>
               </div>
-              {datasetInfo.holiday_keys?.length > 0 && (
+              {(datasetInfo.holiday_keys?.length ?? 0) > 0 && (
                 <div className="sm:col-span-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Holidays ({datasetInfo.holiday_keys.length})
+                    Holidays ({datasetInfo.holiday_keys!.length})
                   </p>
                   <p className="text-xs text-gray-700 dark:text-gray-300 break-words">
-                    {datasetInfo.holiday_keys.join(", ")}
+                    {datasetInfo.holiday_keys!.join(", ")}
                   </p>
                 </div>
               )}

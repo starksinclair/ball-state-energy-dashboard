@@ -18,9 +18,39 @@ import type {
   EdaResponse,
 } from "../types/api";
 import axios from "axios";
+import {
+  EMPTY_DATASET_INFO,
+  EMPTY_METER_LIST,
+  isDatasetInfoResponse,
+  isMeterListResponse,
+} from "../utils/datasetFallbacks";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
 const API_URL = `${API_BASE}/api`;
+
+async function fetchMeterListSafe(): Promise<MeterListResponse> {
+  try {
+    const response = await axios.get(`${API_URL}/meter-list`);
+    if (isMeterListResponse(response.data)) {
+      return response.data;
+    }
+    return EMPTY_METER_LIST;
+  } catch {
+    return EMPTY_METER_LIST;
+  }
+}
+
+async function fetchDatasetInfoSafe(): Promise<DatasetInfoResponse> {
+  try {
+    const response = await axios.get(`${API_URL}/dataset/info`);
+    if (isDatasetInfoResponse(response.data)) {
+      return response.data;
+    }
+    return EMPTY_DATASET_INFO;
+  } catch {
+    return EMPTY_DATASET_INFO;
+  }
+}
 
 export const DATASET_INFO_QUERY_KEY = ["dataset-info"] as const;
 export const METER_LIST_QUERY_KEY = ["meter-list"] as const;
@@ -309,24 +339,16 @@ export const useSeasonalAnalysis = (
 export const useMeterList = () => {
   return useQuery({
     queryKey: METER_LIST_QUERY_KEY,
-    queryFn: async () => {
-      const response = await axios.get<MeterListResponse>(
-        `${API_URL}/meter-list`,
-      );
-      return response.data;
-    },
+    queryFn: fetchMeterListSafe,
+    retry: false,
   });
 };
 
 export const useDatasetInfo = () => {
   return useQuery({
     queryKey: DATASET_INFO_QUERY_KEY,
-    queryFn: async () => {
-      const response = await axios.get<DatasetInfoResponse>(
-        `${API_URL}/dataset/info`,
-      );
-      return response.data;
-    },
+    queryFn: fetchDatasetInfoSafe,
+    retry: false,
   });
 };
 
