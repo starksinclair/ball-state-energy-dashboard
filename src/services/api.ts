@@ -1,18 +1,32 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type {
   BaseRequest,
   TimeSeriesResponse,
   SeasonalAnalysisResponse,
   TemperatureAnalysisResponse,
   MeterListResponse,
+  DatasetInfoResponse,
+  DatasetUploadResponse,
+  ForecastResponse,
+  ChatRequest,
+  ChatResponse,
+  EdaResponse,
 } from "../types/api";
 import axios from "axios";
 
 const API_URL = "http://127.0.0.1:8000/api";
 
+export const DATASET_INFO_QUERY_KEY = ["dataset-info"] as const;
+export const METER_LIST_QUERY_KEY = ["meter-list"] as const;
+
 export const useTimeSeries = (
   request: BaseRequest,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) => {
   return useQuery({
     queryKey: [
@@ -23,10 +37,55 @@ export const useTimeSeries = (
       request.smoothing_method,
       request.smoothing_window,
       request.cleaning_method,
+      request.cleaning_window,
+      request.cleaning_n_sigma,
+      request.cleaning_interval_width,
       request.meters_to_add,
+      request.forecast,
+      request.assessment,
+      request.test_hours,
+      request.model,
+      request.interval_type,
+      request.interval_width,
+      request.sarimax_order,
+      request.sarimax_seasonal_order,
+      request.sarimax_trend,
+      request.sarimax_enforce_stationarity,
+      request.sarimax_enforce_invertibility,
+      request.sarimax_concentrate_scale,
+      request.sarimax_measurement_error,
+      request.sarimax_simple_differencing,
+      request.sarimax_method,
+      request.sarimax_maxiter,
+      request.sarimax_cov_type,
+      request.prophet_changepoint_prior_scale,
+      request.prophet_seasonality_prior_scale,
+      request.prophet_holidays_prior_scale,
+      request.prophet_n_changepoints,
+      request.prophet_changepoint_range,
+      request.prophet_growth,
+      request.prophet_weekly_seasonality,
+      request.prophet_daily_seasonality,
+      request.prophet_mcmc_samples,
+      request.n_lags,
+      request.n_forecasts,
+      request.lagged_features,
+      request.feature_lags,
+      request.epochs,
+      request.n_changepoints,
+      request.changepoints_range,
+      request.trend_reg,
+      request.seasonality_reg,
+      request.seasonality_mode,
+      request.yearly_seasonality,
+      request.ar_reg,
+      request.learning_rate,
+      request.batch_size,
+      request.newer_samples_weight,
+      request.features,
     ],
     queryFn: async () => {
-      const params: Record<string, string | number | Record<string, string[]>> = {
+      const params: BaseRequest = {
         start_date: request.start_date,
         end_date: request.end_date,
         meter: request.meter,
@@ -41,14 +100,149 @@ export const useTimeSeries = (
       if (request.cleaning_method) {
         params.cleaning_method = request.cleaning_method;
       }
+      if (request.cleaning_window !== undefined) {
+        params.cleaning_window = request.cleaning_window;
+      }
+      if (request.cleaning_n_sigma !== undefined) {
+        params.cleaning_n_sigma = request.cleaning_n_sigma;
+      }
+      if (request.cleaning_interval_width !== undefined) {
+        params.cleaning_interval_width = request.cleaning_interval_width;
+      }
       if (request.meters_to_add) {
         // Send as JSON string for complex object
-        params.meters_to_add = JSON.stringify(request.meters_to_add);
+        params.meters_to_add = request.meters_to_add;
+      }
+      if (request.forecast || request.assessment) {
+        params.forecast = request.forecast;
+        params.assessment = request.assessment;
+        params.test_hours = request.test_hours;
+        params.model = request.model;
+        if (request.interval_type) {
+          params.interval_type = request.interval_type;
+        }
+        if (request.interval_width !== undefined) {
+          params.interval_width = request.interval_width;
+        }
+        if (request.sarimax_order) {
+          params.sarimax_order = request.sarimax_order;
+        }
+        if (request.sarimax_seasonal_order) {
+          params.sarimax_seasonal_order = request.sarimax_seasonal_order;
+        }
+        if (request.sarimax_trend) {
+          params.sarimax_trend = request.sarimax_trend;
+        }
+        if (request.sarimax_enforce_stationarity !== undefined) {
+          params.sarimax_enforce_stationarity =
+            request.sarimax_enforce_stationarity;
+        }
+        if (request.sarimax_enforce_invertibility !== undefined) {
+          params.sarimax_enforce_invertibility =
+            request.sarimax_enforce_invertibility;
+        }
+        if (request.sarimax_concentrate_scale !== undefined) {
+          params.sarimax_concentrate_scale = request.sarimax_concentrate_scale;
+        }
+        if (request.sarimax_measurement_error !== undefined) {
+          params.sarimax_measurement_error = request.sarimax_measurement_error;
+        }
+        if (request.sarimax_simple_differencing !== undefined) {
+          params.sarimax_simple_differencing =
+            request.sarimax_simple_differencing;
+        }
+        if (request.sarimax_method) {
+          params.sarimax_method = request.sarimax_method;
+        }
+        if (request.sarimax_maxiter !== undefined) {
+          params.sarimax_maxiter = request.sarimax_maxiter;
+        }
+        if (request.sarimax_cov_type) {
+          params.sarimax_cov_type = request.sarimax_cov_type;
+        }
+        if (request.prophet_changepoint_prior_scale !== undefined) {
+          params.prophet_changepoint_prior_scale =
+            request.prophet_changepoint_prior_scale;
+        }
+        if (request.prophet_seasonality_prior_scale !== undefined) {
+          params.prophet_seasonality_prior_scale =
+            request.prophet_seasonality_prior_scale;
+        }
+        if (request.prophet_holidays_prior_scale !== undefined) {
+          params.prophet_holidays_prior_scale =
+            request.prophet_holidays_prior_scale;
+        }
+        if (request.prophet_n_changepoints !== undefined) {
+          params.prophet_n_changepoints = request.prophet_n_changepoints;
+        }
+        if (request.prophet_changepoint_range !== undefined) {
+          params.prophet_changepoint_range = request.prophet_changepoint_range;
+        }
+        if (request.prophet_growth) {
+          params.prophet_growth = request.prophet_growth;
+        }
+        if (request.prophet_weekly_seasonality !== undefined) {
+          params.prophet_weekly_seasonality = request.prophet_weekly_seasonality;
+        }
+        if (request.prophet_daily_seasonality !== undefined) {
+          params.prophet_daily_seasonality = request.prophet_daily_seasonality;
+        }
+        if (request.prophet_mcmc_samples !== undefined) {
+          params.prophet_mcmc_samples = request.prophet_mcmc_samples;
+        }
+        if (request.n_lags !== undefined) {
+          params.n_lags = request.n_lags;
+        }
+        if (request.n_forecasts !== undefined) {
+          params.n_forecasts = request.n_forecasts;
+        }
+        if (request.lagged_features?.length) {
+          params.lagged_features = request.lagged_features;
+        }
+        if (request.feature_lags !== undefined) {
+          params.feature_lags = request.feature_lags;
+        }
+        if (request.epochs !== undefined) {
+          params.epochs = request.epochs;
+        }
+        if (request.n_changepoints !== undefined) {
+          params.n_changepoints = request.n_changepoints;
+        }
+        if (request.changepoints_range !== undefined) {
+          params.changepoints_range = request.changepoints_range;
+        }
+        if (request.trend_reg !== undefined) {
+          params.trend_reg = request.trend_reg;
+        }
+        if (request.seasonality_reg !== undefined) {
+          params.seasonality_reg = request.seasonality_reg;
+        }
+        if (request.seasonality_mode) {
+          params.seasonality_mode = request.seasonality_mode;
+        }
+        if (request.yearly_seasonality !== undefined) {
+          params.yearly_seasonality = request.yearly_seasonality;
+        }
+        if (request.ar_reg !== undefined) {
+          params.ar_reg = request.ar_reg;
+        }
+        if (request.learning_rate !== undefined) {
+          params.learning_rate = request.learning_rate;
+        }
+        if (request.batch_size !== undefined) {
+          params.batch_size = request.batch_size;
+        }
+        if (request.newer_samples_weight !== undefined) {
+          params.newer_samples_weight = request.newer_samples_weight;
+        }
+        if (request.features) {
+          params.features = request.features;
+        }
       }
 
-      const response = await axios.get<TimeSeriesResponse>(
+      const response = await axios.post<TimeSeriesResponse>(
         `${API_URL}/time-series`,
-        { params }
+        params,
       );
       return response.data;
     },
@@ -60,8 +254,18 @@ export const useTimeSeries = (
 };
 
 export const useSeasonalAnalysis = (
-  request: Pick<BaseRequest, "start_date" | "end_date" | "meter">,
-  options?: { enabled?: boolean }
+  request: Pick<
+    BaseRequest,
+    | "start_date"
+    | "end_date"
+    | "meter"
+    | "meters_to_add"
+    | "cleaning_method"
+    | "cleaning_window"
+    | "cleaning_n_sigma"
+    | "cleaning_interval_width"
+  >,
+  options?: { enabled?: boolean },
 ) => {
   return useQuery({
     queryKey: [
@@ -69,6 +273,11 @@ export const useSeasonalAnalysis = (
       request.start_date,
       request.end_date,
       request.meter,
+      request.meters_to_add,
+      request.cleaning_method,
+      request.cleaning_window,
+      request.cleaning_n_sigma,
+      request.cleaning_interval_width,
     ],
     queryFn: async () => {
       const response = await axios.get<SeasonalAnalysisResponse>(
@@ -78,8 +287,13 @@ export const useSeasonalAnalysis = (
             start_date: request.start_date,
             end_date: request.end_date,
             meter: request.meter,
+            meters_to_add: request.meters_to_add,
+            cleaning_method: request.cleaning_method,
+            cleaning_window: request.cleaning_window,
+            cleaning_n_sigma: request.cleaning_n_sigma,
+            cleaning_interval_width: request.cleaning_interval_width,
           },
-        }
+        },
       );
       return response.data;
     },
@@ -92,19 +306,67 @@ export const useSeasonalAnalysis = (
 
 export const useMeterList = () => {
   return useQuery({
-    queryKey: ["meter-list"],
+    queryKey: METER_LIST_QUERY_KEY,
     queryFn: async () => {
       const response = await axios.get<MeterListResponse>(
-        `${API_URL}/meter-list`
+        `${API_URL}/meter-list`,
       );
       return response.data;
     },
   });
 };
 
+export const useDatasetInfo = () => {
+  return useQuery({
+    queryKey: DATASET_INFO_QUERY_KEY,
+    queryFn: async () => {
+      const response = await axios.get<DatasetInfoResponse>(
+        `${API_URL}/dataset/info`,
+      );
+      return response.data;
+    },
+  });
+};
+
+export async function uploadDataset(files: {
+  energyCsv: File;
+  holidayJson: File;
+}): Promise<DatasetUploadResponse> {
+  const form = new FormData();
+  form.append("energy_csv", files.energyCsv);
+  form.append("holiday_json", files.holidayJson);
+  const response = await axios.post<DatasetUploadResponse>(
+    `${API_URL}/dataset/upload`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return response.data;
+}
+
+export function useDatasetUpload() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: uploadDataset,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DATASET_INFO_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: METER_LIST_QUERY_KEY });
+    },
+  });
+}
+
 export const useTemperatureAnalysis = (
-  request: Pick<BaseRequest, "start_date" | "end_date" | "meter">,
-  options?: { enabled?: boolean }
+  request: Pick<
+    BaseRequest,
+    | "start_date"
+    | "end_date"
+    | "meter"
+    | "meters_to_add"
+    | "cleaning_method"
+    | "cleaning_window"
+    | "cleaning_n_sigma"
+    | "cleaning_interval_width"
+  >,
+  options?: { enabled?: boolean },
 ) => {
   return useQuery({
     queryKey: [
@@ -112,6 +374,11 @@ export const useTemperatureAnalysis = (
       request.start_date,
       request.end_date,
       request.meter,
+      request.meters_to_add,
+      request.cleaning_method,
+      request.cleaning_window,
+      request.cleaning_n_sigma,
+      request.cleaning_interval_width,
     ],
     queryFn: async () => {
       const response = await axios.get<TemperatureAnalysisResponse>(
@@ -121,8 +388,13 @@ export const useTemperatureAnalysis = (
             start_date: request.start_date,
             end_date: request.end_date,
             meter: request.meter,
+            meters_to_add: request.meters_to_add,
+            cleaning_method: request.cleaning_method,
+            cleaning_window: request.cleaning_window,
+            cleaning_n_sigma: request.cleaning_n_sigma,
+            cleaning_interval_width: request.cleaning_interval_width,
           },
-        }
+        },
       );
       return response.data;
     },
@@ -132,3 +404,178 @@ export const useTemperatureAnalysis = (
     ...options,
   });
 };
+
+export const useForecast = (
+  request: BaseRequest,
+  options?: { enabled?: boolean },
+) => {
+  return useQuery({
+    queryKey: [
+      "forecast",
+      request.start_date,
+      request.end_date,
+      request.meter,
+      request.cleaning_method,
+      request.cleaning_window,
+      request.cleaning_n_sigma,
+      request.cleaning_interval_width,
+      request.interval_type,
+      request.interval_width,
+      request.sarimax_order,
+      request.sarimax_seasonal_order,
+      request.features,
+      request.meters_to_add,
+    ],
+    queryFn: async () => {
+      const params: Record<string, unknown> = {
+        start_date: request.start_date,
+        end_date: request.end_date,
+        meter: request.meter,
+      };
+
+      if (request.cleaning_method) {
+        params.cleaning_method = request.cleaning_method;
+      }
+      if (request.cleaning_window !== undefined) {
+        params.cleaning_window = request.cleaning_window;
+      }
+      if (request.cleaning_n_sigma !== undefined) {
+        params.cleaning_n_sigma = request.cleaning_n_sigma;
+      }
+      if (request.cleaning_interval_width !== undefined) {
+        params.cleaning_interval_width = request.cleaning_interval_width;
+      }
+      if (request.interval_type) {
+        params.interval_type = request.interval_type;
+      }
+      if (request.interval_width !== undefined) {
+        params.interval_width = request.interval_width;
+      }
+      if (request.sarimax_order) {
+        params.sarimax_order = request.sarimax_order;
+      }
+      if (request.sarimax_seasonal_order) {
+        params.sarimax_seasonal_order = request.sarimax_seasonal_order;
+      }
+      if (request.features) {
+        params.features = request.features;
+      }
+      if (request.meters_to_add) {
+        params.meters_to_add = request.meters_to_add;
+      }
+
+      const response = await axios.post<ForecastResponse>(
+        `${API_URL}/forecast`,
+        params,
+      );
+      return response.data;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    placeholderData: keepPreviousData,
+    ...options,
+  });
+};
+
+export const useEdaPlot = (
+  request: BaseRequest | null,
+  options?: { enabled?: boolean },
+) => {
+  return useQuery({
+    queryKey: [
+      "eda-plot",
+      request?.eda_route,
+      request?.start_date,
+      request?.end_date,
+      request?.meter,
+      request?.meters_to_add,
+      request?.cleaning_method,
+      request?.cleaning_window,
+      request?.cleaning_n_sigma,
+      request?.cleaning_interval_width,
+      request?.seasonal_periods,
+      request?.seasonality_periods,
+      request?.n_harmonics,
+      request?.use_hac,
+      request?.include_kruskal_wallis,
+      request?.kw_tests,
+      request?.unit_root_regression,
+      request?.include_break_test,
+      request?.decompose_period,
+      request?.decompose_model,
+      request?.acf_lags,
+      request?.smoothing_method,
+      request?.smoothing_window,
+      request?.annotated,
+    ],
+    queryFn: async () => {
+      if (!request?.eda_route) throw new Error("No EDA route selected");
+
+      const body: Record<string, unknown> = {
+        start_date: request.start_date,
+        end_date: request.end_date,
+        meter: request.meter,
+      };
+
+      if (request.cleaning_method) body.cleaning_method = request.cleaning_method;
+      if (request.cleaning_window !== undefined) body.cleaning_window = request.cleaning_window;
+      if (request.cleaning_n_sigma !== undefined) body.cleaning_n_sigma = request.cleaning_n_sigma;
+      if (request.cleaning_interval_width !== undefined) body.cleaning_interval_width = request.cleaning_interval_width;
+      if (request.meters_to_add) body.meters_to_add = request.meters_to_add;
+
+      if (request.eda_route === "trend-tests" && request.seasonal_periods !== undefined) {
+        body.seasonal_periods = request.seasonal_periods;
+      }
+      if (request.eda_route === "seasonality-tests") {
+        if (request.seasonality_periods?.length) {
+          body.seasonality_periods = request.seasonality_periods;
+        }
+        if (request.n_harmonics !== undefined) {
+          body.n_harmonics = request.n_harmonics;
+        }
+        body.use_hac = request.use_hac ?? true;
+        if (request.include_kruskal_wallis !== undefined) {
+          body.include_kruskal_wallis = request.include_kruskal_wallis;
+        }
+        if (request.kw_tests?.length) {
+          body.kw_tests = request.kw_tests;
+        }
+      }
+      if (request.eda_route === "unit-root-tests") {
+        body.unit_root_regression = request.unit_root_regression ?? "c";
+        body.include_break_test = request.include_break_test ?? false;
+      }
+      if (request.eda_route === "seasonal-decompose") {
+        if (request.decompose_period !== undefined) body.decompose_period = request.decompose_period;
+        if (request.decompose_model) body.decompose_model = request.decompose_model;
+      }
+      if (request.eda_route === "autocorr" && request.acf_lags !== undefined) {
+        body.acf_lags = request.acf_lags;
+      }
+      if (request.eda_route === "annotated-timeseries") {
+        if (request.smoothing_method) body.smoothing_method = request.smoothing_method;
+        if (request.smoothing_window !== undefined) body.smoothing_window = request.smoothing_window;
+        body.annotated = request.annotated ?? true;
+      }
+
+      const response = await axios.post<EdaResponse>(
+        `${API_URL}/eda/${request.eda_route}`,
+        body,
+      );
+      return response.data;
+    },
+    enabled: !!request && !!request.eda_route && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 60 * 24,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export async function sendChatMessage(
+  request: ChatRequest,
+): Promise<ChatResponse> {
+  const response = await axios.post<ChatResponse>(
+    `${API_URL}/chat`,
+    request,
+  );
+  return response.data;
+}

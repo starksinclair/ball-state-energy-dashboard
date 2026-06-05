@@ -1,0 +1,93 @@
+import type { EdaRoute } from "./api";
+import type {
+  NpFeatureLagsUi,
+  NpYearlySeasonalityUi,
+  ProphetSeasonalityBoolUi,
+} from "../constants/neuralProphetFields";
+
+export interface MeterGroup {
+  id: string;
+  name: string;
+  meters: string[];
+}
+
+export interface ParameterFormState {
+  startDate: string;
+  endDate: string;
+  meter: string;
+  cleaningMethod: string;
+  cleaningExtra: Record<string, number>;
+  smoothingMethod: "ma" | "hp";
+  smoothingWindow: number;
+  hpLambda: number;
+  forecast: boolean;
+  assessment: boolean;
+  testHours: number;
+  forecastIntervalType: "two-sided" | "upper-bounded" | "lower-bounded";
+  forecastIntervalWidth: number;
+  forecastModel: "Prophet" | "SARIMAX" | "NeuralProphet";
+  sarimaxOrder: [number, number, number];
+  sarimaxSeasonalOrder: [number, number, number, number];
+  sarimaxTrend: "" | "n" | "c" | "t" | "ct";
+  sarimaxEnforceStationarity: boolean;
+  sarimaxEnforceInvertibility: boolean;
+  sarimaxConcentrateScale: boolean;
+  sarimaxMeasurementError: boolean;
+  sarimaxSimpleDifferencing: boolean;
+  sarimaxMethod: "lbfgs" | "nm" | "powell" | "bfgs" | "cg";
+  sarimaxMaxiter: number;
+  sarimaxCovType: "opg" | "oim" | "robust";
+  showSarimaxAdvanced: boolean;
+  prophetChangepointPriorScale: number;
+  prophetSeasonalityPriorScale: number;
+  prophetHolidaysPriorScale: number;
+  prophetNChangepoints: number;
+  prophetChangepointRange: number;
+  prophetGrowth: "linear" | "logistic" | "flat";
+  prophetWeeklySeasonality: ProphetSeasonalityBoolUi;
+  prophetWeeklySeasonalityOrder: number;
+  prophetDailySeasonality: ProphetSeasonalityBoolUi;
+  prophetDailySeasonalityOrder: number;
+  prophetMcmcSamples: number;
+  neuralProphetNLags: number;
+  neuralProphetNForecasts: number;
+  laggedFeatures: string[];
+  npFeatureLagsMode: NpFeatureLagsUi;
+  npFeatureLagsUniform: string;
+  npFeatureLagsJson: string;
+  npEpochs: string;
+  npNChangepoints: number;
+  npChangepointsRange: number;
+  npTrendReg: number;
+  npSeasonalityReg: number;
+  npSeasonalityMode: "additive" | "multiplicative";
+  npYearlySeasonality: NpYearlySeasonalityUi;
+  npYearlySeasonalityOrder: number;
+  npArReg: string;
+  npLearningRate: string;
+  npBatchSize: string;
+  npNewerSamplesWeight: string;
+  showNeuralProphetAdvanced: boolean;
+  features: string[];
+  showAdvanced: boolean;
+  showForecastOptions: boolean;
+  edaRoute: EdaRoute;
+  edaSeasonalPeriods: number;
+  edaSeasonalityPeriodsText: string;
+  edaNHarmonicsMode: "auto" | "shared" | "dict";
+  edaNHarmonicsShared: string;
+  edaNHarmonicsJson: string;
+  edaUseHac: boolean;
+  edaIncludeKruskalWallis: boolean;
+  edaKwTestsMode: "auto" | "custom";
+  edaKwTestsJson: string;
+  edaUnitRootRegression: "c" | "ct";
+  edaIncludeBreakTest: boolean;
+  edaDecomposePeriod: number;
+  edaDecomposeModel: "additive" | "multiplicative";
+  edaAcfLags: number;
+  edaAnnotated: boolean;
+  edaSmoothingMethod: "ma" | "hp";
+  edaSmoothingWindow: number;
+}
+

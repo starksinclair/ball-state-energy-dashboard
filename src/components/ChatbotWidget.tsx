@@ -1,0 +1,283 @@
+import { useState, useRef, useEffect } from "react";
+import { AxiosError } from "axios";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
+import type { ChatMessage } from "../types/api";
+import { sendChatMessage } from "../services/api";
+
+type UiMessage = ChatMessage & { id: string };
+
+/** Markdown for assistant/system bubbles (red background, light text). */
+const assistantMarkdownComponents: Components = {
+  p: ({ children }) => (
+    <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-white">{children}</strong>
+  ),
+  em: ({ children }) => <em className="italic text-red-100">{children}</em>,
+  code: ({ className, children, ...props }) => {
+    const isBlock = Boolean(className);
+    if (isBlock) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        className="rounded bg-black/25 px-1 py-0.5 text-[0.85em] font-mono"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+  pre: ({ children }) => (
+    <pre className="my-1 max-w-full overflow-x-auto rounded-md bg-black/30 p-2 text-xs leading-snug text-red-50">
+      {children}
+    </pre>
+  ),
+  ul: ({ children }) => (
+    <ul className="my-1 list-disc space-y-0.5 pl-4 text-sm">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="my-1 list-decimal space-y-0.5 pl-4 text-sm">{children}</ol>
+  ),
+  li: ({ children }) => <li className="leading-snug">{children}</li>,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="break-all text-red-100 underline underline-offset-2 hover:text-white"
+    >
+      {children}
+    </a>
+  ),
+  h1: ({ children }) => (
+    <h1 className="mb-1 text-base font-semibold">{children}</h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="mb-1 text-sm font-semibold">{children}</h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mb-1 text-sm font-medium">{children}</h3>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="my-1 border-l-2 border-white/40 pl-2 text-sm italic text-red-100">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="my-2 border-white/30" />,
+  table: ({ children }) => (
+    <div className="my-1 max-w-full overflow-x-auto">
+      <table className="w-full min-w-[200px] border-collapse border border-white/25 text-xs">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-black/20">{children}</thead>,
+  th: ({ children }) => (
+    <th className="border border-white/25 px-1.5 py-1 text-left font-medium">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="border border-white/25 px-1.5 py-1">{children}</td>
+  ),
+};
+
+export default function ChatbotWidget() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<UiMessage[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      content:
+        "Hi! Ask about only meters for now.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [sessionId, setSessionId] = useState<string | undefined>();
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, isOpen]);
+
+  const handleSend = async () => {
+    const trimmed = input.trim();
+    if (!trimmed || isSending) return;
+
+    const userMsg: UiMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: trimmed,
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setError(null);
+    setIsSending(true);
+
+    const history: ChatMessage[] = [...messages, userMsg].map(
+      ({ role, content }) => ({ role, content }),
+    );
+
+    try {
+      const res = await sendChatMessage({
+        messages: history,
+        session_id: sessionId,
+      });
+      if (res.session_id) setSessionId(res.session_id);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: res.message.role,
+          content: res.message.content,
+        },
+      ]);
+    } catch (e) {
+      const msg =
+        e instanceof AxiosError
+          ? String(e.response?.data?.detail ?? e.message)
+          : e instanceof Error
+            ? e.message
+            : "Request failed";
+      setError(msg);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-13 right-6 z-50">
+      {isOpen && (
+        <div className="w-[360px] max-w-[calc(100vw-3rem)] h-[520px] mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-colors">
+          <div className="px-4 py-3 bg-[#ba0c2f] text-white flex items-center justify-between shrink-0">
+            <div>
+              <h3 className="text-sm font-semibold">Energy Assistant</h3>
+              <p className="text-xs text-red-100">
+                Backend: Ollama + MCP
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="p-1 rounded hover:bg-white/20 transition-colors"
+              aria-label="Close chat window"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/40 transition-colors"
+          >
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={
+                  m.role === "user"
+                    ? "max-w-[85%] ml-auto rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 transition-colors whitespace-pre-wrap wrap-break-word"
+                    : "max-w-[85%] rounded-lg px-3 py-2 text-sm bg-[#ba0c2f] text-white wrap-break-word [&_a]:text-inherit"
+                }
+              >
+                {m.role === "user" ? (
+                  m.content
+                ) : (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={assistantMarkdownComponents}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
+                )}
+              </div>
+            ))}
+            {isSending && (
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Thinking…
+              </div>
+            )}
+            {error && (
+              <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs text-red-800 dark:text-red-200">
+                {error}
+              </div>
+            )}
+          </div>
+
+          <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 transition-colors">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Type a message…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleSend();
+                  }
+                }}
+                disabled={isSending}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={() => void handleSend()}
+                disabled={isSending || !input.trim()}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-[#ba0c2f] text-white hover:bg-[#9a0a26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="w-14 h-14 rounded-full bg-[#ba0c2f] hover:bg-[#9a0a26] text-white shadow-lg flex items-center justify-center transition-colors"
+        aria-label={isOpen ? "Hide chatbot" : "Open chatbot"}
+      >
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 10h8m-8 4h5m8-2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
