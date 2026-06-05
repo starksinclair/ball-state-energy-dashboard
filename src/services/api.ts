@@ -19,7 +19,7 @@ import type {
 } from "../types/api";
 import axios from "axios";
 
-const API_URL = "http://127.0.0.1:8000/api";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api";
 
 export const DATASET_INFO_QUERY_KEY = ["dataset-info"] as const;
 export const METER_LIST_QUERY_KEY = ["meter-list"] as const;
@@ -182,7 +182,8 @@ export const useTimeSeries = (
           params.prophet_growth = request.prophet_growth;
         }
         if (request.prophet_weekly_seasonality !== undefined) {
-          params.prophet_weekly_seasonality = request.prophet_weekly_seasonality;
+          params.prophet_weekly_seasonality =
+            request.prophet_weekly_seasonality;
         }
         if (request.prophet_daily_seasonality !== undefined) {
           params.prophet_daily_seasonality = request.prophet_daily_seasonality;
@@ -517,13 +518,20 @@ export const useEdaPlot = (
         meter: request.meter,
       };
 
-      if (request.cleaning_method) body.cleaning_method = request.cleaning_method;
-      if (request.cleaning_window !== undefined) body.cleaning_window = request.cleaning_window;
-      if (request.cleaning_n_sigma !== undefined) body.cleaning_n_sigma = request.cleaning_n_sigma;
-      if (request.cleaning_interval_width !== undefined) body.cleaning_interval_width = request.cleaning_interval_width;
+      if (request.cleaning_method)
+        body.cleaning_method = request.cleaning_method;
+      if (request.cleaning_window !== undefined)
+        body.cleaning_window = request.cleaning_window;
+      if (request.cleaning_n_sigma !== undefined)
+        body.cleaning_n_sigma = request.cleaning_n_sigma;
+      if (request.cleaning_interval_width !== undefined)
+        body.cleaning_interval_width = request.cleaning_interval_width;
       if (request.meters_to_add) body.meters_to_add = request.meters_to_add;
 
-      if (request.eda_route === "trend-tests" && request.seasonal_periods !== undefined) {
+      if (
+        request.eda_route === "trend-tests" &&
+        request.seasonal_periods !== undefined
+      ) {
         body.seasonal_periods = request.seasonal_periods;
       }
       if (request.eda_route === "seasonality-tests") {
@@ -546,15 +554,19 @@ export const useEdaPlot = (
         body.include_break_test = request.include_break_test ?? false;
       }
       if (request.eda_route === "seasonal-decompose") {
-        if (request.decompose_period !== undefined) body.decompose_period = request.decompose_period;
-        if (request.decompose_model) body.decompose_model = request.decompose_model;
+        if (request.decompose_period !== undefined)
+          body.decompose_period = request.decompose_period;
+        if (request.decompose_model)
+          body.decompose_model = request.decompose_model;
       }
       if (request.eda_route === "autocorr" && request.acf_lags !== undefined) {
         body.acf_lags = request.acf_lags;
       }
       if (request.eda_route === "annotated-timeseries") {
-        if (request.smoothing_method) body.smoothing_method = request.smoothing_method;
-        if (request.smoothing_window !== undefined) body.smoothing_window = request.smoothing_window;
+        if (request.smoothing_method)
+          body.smoothing_method = request.smoothing_method;
+        if (request.smoothing_window !== undefined)
+          body.smoothing_window = request.smoothing_window;
         body.annotated = request.annotated ?? true;
       }
 
@@ -573,9 +585,6 @@ export const useEdaPlot = (
 export async function sendChatMessage(
   request: ChatRequest,
 ): Promise<ChatResponse> {
-  const response = await axios.post<ChatResponse>(
-    `${API_URL}/chat`,
-    request,
-  );
+  const response = await axios.post<ChatResponse>(`${API_URL}/chat`, request);
   return response.data;
 }
