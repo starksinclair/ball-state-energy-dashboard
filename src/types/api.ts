@@ -222,9 +222,9 @@ interface Annotation {
   end: string;
   label: string;
 }
-interface Outlier {
-  DateTime: string;
-  Value: number;
+export interface Outlier {
+  datetime: string;
+  value: number;
 }
 
 export interface TimeSeriesResponse {
@@ -259,15 +259,19 @@ interface TemperatureAnalysisData extends Omit<SeasonalAnalysisData, "season"> {
   temp_bin: string;
 }
 export interface SeasonalAnalysisResponse {
+  success?: boolean;
   meter: string;
   date_range: TimeSeriesDateRange;
   boxplot_data: SeasonalAnalysisData[];
+  plot_png_base64?: string;
 }
 
 export interface TemperatureAnalysisResponse {
+  success?: boolean;
   meter: string;
   date_range: TimeSeriesDateRange;
   boxplot_data: TemperatureAnalysisData[];
+  plot_png_base64?: string;
 }
 // EDA Routes
 export type EdaRoute =
@@ -445,6 +449,11 @@ export interface DatasetInfoResponse {
   holiday_keys: string[];
 }
 
+export interface DatasetUploadUrlsResponse {
+  csv_upload_url: string;
+  holiday_upload_url: string;
+}
+
 export interface DatasetUploadResponse {
   success: boolean;
   message?: string;
@@ -452,6 +461,13 @@ export interface DatasetUploadResponse {
   time_range?: Pick<TimeSeriesDateRange, "start" | "end">;
   holiday_keys?: string[];
 }
+
+export type DatasetUploadPhase =
+  | "multipart"
+  | "requesting-urls"
+  | "uploading-csv"
+  | "uploading-holiday"
+  | "confirming";
 
 export interface ForecastData {
   date: string;

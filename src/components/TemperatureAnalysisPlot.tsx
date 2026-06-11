@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   VictoryChart,
   VictoryAxis,
@@ -17,25 +16,16 @@ interface TemperatureAnalysisPlotProps {
 export default function TemperatureAnalysisPlot({
   submitParams,
 }: TemperatureAnalysisPlotProps) {
-  const [queryParams, setQueryParams] = useState<BaseRequest | null>(null);
-
-  // Update internal state when submitParams changes
-  useEffect(() => {
-    if (submitParams) {
-      setQueryParams(submitParams);
-    }
-  }, [submitParams]);
-
   const { data, isLoading, error } = useTemperatureAnalysis(
-    queryParams || {
+    submitParams || {
       start_date: "",
       end_date: "",
       meter: "",
     },
-    { enabled: !!queryParams }
+    { enabled: !!submitParams }
   );
 
-  if (!queryParams) {
+  if (!submitParams) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <p className="text-gray-500 text-center py-8">
@@ -124,115 +114,130 @@ export default function TemperatureAnalysisPlot({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold text-ball-state-blue mb-4">
-          Temperature Analysis - {data.meter}
-        </h3>
-        <div className="w-full overflow-x-auto">
-          <VictoryChart
-            theme={VictoryTheme.material}
-            domainPadding={{ x: 40 }}
-            height={500}
-            width={1000}
-            padding={{ top: 80, bottom: 80, left: 90, right: 60 }}
-          >
-            <VictoryLegend
-              x={200}
-              y={10}
-              orientation="horizontal"
-              gutter={20}
-              style={{ border: { stroke: "none" }, labels: { fontSize: 12 } }}
-              data={[
-                { name: "In Session", symbol: { fill: "#10b981" } },
-                { name: "Not in Session", symbol: { fill: "#ba0c2f" } },
-              ]}
-            />
-
-            <VictoryAxis
-              dependentAxis
-              label="Energy Consumption (kWh)"
-              style={{
-                axisLabel: { padding: 40, fontSize: 14 },
-                tickLabels: { fontSize: 12 },
-              }}
-            />
-
-            <VictoryAxis
-              tickValues={tempBinOrder.map((_, i) => i + 0.5)}
-              tickFormat={tempBinOrder}
-              label="Temperature Range (°F)"
-              style={{
-                axisLabel: { padding: 50, fontSize: 14 },
-                tickLabels: { fontSize: 10 },
-              }}
-            />
-
-            {/* In Session Boxplots */}
-            <VictoryBoxPlot
-              data={inSession}
-              x="x"
-              min="min"
-              q1="q1"
-              median="median"
-              q3="q3"
-              max="max"
-              boxWidth={18}
-              whiskerWidth={8}
-              style={{
-                min: { stroke: "#10b981", strokeWidth: 1.5 },
-                max: { stroke: "#10b981", strokeWidth: 1.5 },
-                q1: {
-                  fill: "#10b981",
-                  fillOpacity: 0.4,
-                  stroke: "#047857",
-                  strokeWidth: 1,
-                },
-                q3: {
-                  fill: "#10b981",
-                  fillOpacity: 0.4,
-                  stroke: "#047857",
-                  strokeWidth: 1,
-                },
-                median: { stroke: "#047857", strokeWidth: 2 },
-                minLabels: { fill: "none" },
-                maxLabels: { fill: "none" },
-              }}
-            />
-
-            {/* Not in Session Boxplots */}
-            <VictoryBoxPlot
-              data={notInSession}
-              x="x"
-              min="min"
-              q1="q1"
-              median="median"
-              q3="q3"
-              max="max"
-              boxWidth={18}
-              whiskerWidth={8}
-              style={{
-                min: { stroke: "#ba0c2f", strokeWidth: 1.5 },
-                max: { stroke: "#ba0c2f", strokeWidth: 1.5 },
-                q1: {
-                  fill: "#ba0c2f",
-                  fillOpacity: 0.4,
-                  stroke: "#7f1d1d",
-                  strokeWidth: 1,
-                },
-                q3: {
-                  fill: "#ba0c2f",
-                  fillOpacity: 0.4,
-                  stroke: "#7f1d1d",
-                  strokeWidth: 1,
-                },
-                median: { stroke: "#7f1d1d", strokeWidth: 2 },
-                minLabels: { fill: "none" },
-                maxLabels: { fill: "none" },
-              }}
-            />
-          </VictoryChart>
+      {data.plot_png_base64 && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold text-ball-state-blue mb-4">
+            Temperature Analysis Plot - {data.meter}
+          </h3>
+          <img
+            src={`data:image/png;base64,${data.plot_png_base64}`}
+            alt={`Temperature analysis plot for ${data.meter}`}
+            className="w-full h-auto rounded-lg border border-gray-200"
+          />
         </div>
-      </div>
+      )}
+
+     {!data.plot_png_base64 && (
+       <div className="bg-white rounded-lg shadow-md p-6">
+       <h3 className="text-xl font-semibold text-ball-state-blue mb-4">
+         Temperature Analysis - {data.meter}
+       </h3>
+       <div className="w-full overflow-x-auto">
+         <VictoryChart
+           theme={VictoryTheme.material}
+           domainPadding={{ x: 40 }}
+           height={500}
+           width={1000}
+           padding={{ top: 80, bottom: 80, left: 90, right: 60 }}
+         >
+           <VictoryLegend
+             x={200}
+             y={10}
+             orientation="horizontal"
+             gutter={20}
+             style={{ border: { stroke: "none" }, labels: { fontSize: 12 } }}
+             data={[
+               { name: "In Session", symbol: { fill: "#10b981" } },
+               { name: "Not in Session", symbol: { fill: "#ba0c2f" } },
+             ]}
+           />
+
+           <VictoryAxis
+             dependentAxis
+             label="Energy Consumption (kWh)"
+             style={{
+               axisLabel: { padding: 40, fontSize: 14 },
+               tickLabels: { fontSize: 12 },
+             }}
+           />
+
+           <VictoryAxis
+             tickValues={tempBinOrder.map((_, i) => i + 0.5)}
+             tickFormat={tempBinOrder}
+             label="Temperature Range (°F)"
+             style={{
+               axisLabel: { padding: 50, fontSize: 14 },
+               tickLabels: { fontSize: 10 },
+             }}
+           />
+
+           {/* In Session Boxplots */}
+           <VictoryBoxPlot
+             data={inSession}
+             x="x"
+             min="min"
+             q1="q1"
+             median="median"
+             q3="q3"
+             max="max"
+             boxWidth={18}
+             whiskerWidth={8}
+             style={{
+               min: { stroke: "#10b981", strokeWidth: 1.5 },
+               max: { stroke: "#10b981", strokeWidth: 1.5 },
+               q1: {
+                 fill: "#10b981",
+                 fillOpacity: 0.4,
+                 stroke: "#047857",
+                 strokeWidth: 1,
+               },
+               q3: {
+                 fill: "#10b981",
+                 fillOpacity: 0.4,
+                 stroke: "#047857",
+                 strokeWidth: 1,
+               },
+               median: { stroke: "#047857", strokeWidth: 2 },
+               minLabels: { fill: "none" },
+               maxLabels: { fill: "none" },
+             }}
+           />
+
+           {/* Not in Session Boxplots */}
+           <VictoryBoxPlot
+             data={notInSession}
+             x="x"
+             min="min"
+             q1="q1"
+             median="median"
+             q3="q3"
+             max="max"
+             boxWidth={18}
+             whiskerWidth={8}
+             style={{
+               min: { stroke: "#ba0c2f", strokeWidth: 1.5 },
+               max: { stroke: "#ba0c2f", strokeWidth: 1.5 },
+               q1: {
+                 fill: "#ba0c2f",
+                 fillOpacity: 0.4,
+                 stroke: "#7f1d1d",
+                 strokeWidth: 1,
+               },
+               q3: {
+                 fill: "#ba0c2f",
+                 fillOpacity: 0.4,
+                 stroke: "#7f1d1d",
+                 strokeWidth: 1,
+               },
+               median: { stroke: "#7f1d1d", strokeWidth: 2 },
+               minLabels: { fill: "none" },
+               maxLabels: { fill: "none" },
+             }}
+           />
+         </VictoryChart>
+       </div>
+     </div>
+     )}
 
       {/* Statistics Table */}
       <div className="bg-white rounded-lg shadow-md p-6 overflow-x-auto">

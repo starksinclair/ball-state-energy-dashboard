@@ -21,16 +21,14 @@ export const PLOT_TYPES: PlotTypeConfig[] = [
     label: "Seasonal Analysis",
     description: "Seasonal analysis of energy consumption",
     available: true,
-    fields: ["start_date", "end_date", "meter"],
-    // fields: ["start_date", "end_date", "meter", "cleaning_method"],
+    fields: ["start_date", "end_date", "meter", "cleaning_method"],
   },
   {
     id: "temperature-analysis",
     label: "Temperature Analysis",
     description: "Temperature analysis of energy consumption",
     available: true,
-    fields: ["start_date", "end_date", "meter"],
-    // fields: ["start_date", "end_date", "meter", "cleaning_method"],
+    fields: ["start_date", "end_date", "meter", "cleaning_method"],
   },
   {
     id: "eda-plots",

@@ -21,8 +21,14 @@ export function ForecastOptionsSection({ form }: ForecastOptionsSectionProps) {
                   type="checkbox"
                   checked={form.forecast}
                   onChange={(e) => {
-                    form.setForecast(e.target.checked);
-                    form.setShowForecastOptions(e.target.checked || form.assessment);
+                    const checked = e.target.checked;
+                    form.setForecast(checked);
+                    if (checked) {
+                      form.setAssessment(false);
+                      form.setShowForecastOptions(true);
+                    } else {
+                      form.setShowForecastOptions(form.assessment);
+                    }
                   }}
                   className="h-4 w-4 text-[#ba0c2f] focus:ring-[#ba0c2f] border-gray-300 rounded"
                 />
@@ -35,8 +41,14 @@ export function ForecastOptionsSection({ form }: ForecastOptionsSectionProps) {
                   type="checkbox"
                   checked={form.assessment}
                   onChange={(e) => {
-                    form.setAssessment(e.target.checked);
-                    form.setShowForecastOptions(form.forecast || e.target.checked);
+                    const checked = e.target.checked;
+                    form.setAssessment(checked);
+                    if (checked) {
+                      form.setForecast(false);
+                      form.setShowForecastOptions(true);
+                    } else {
+                      form.setShowForecastOptions(form.forecast);
+                    }
                   }}
                   className="h-4 w-4 text-[#ba0c2f] focus:ring-[#ba0c2f] border-gray-300 rounded"
                 />

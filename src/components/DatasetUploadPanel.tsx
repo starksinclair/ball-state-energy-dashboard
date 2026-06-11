@@ -1,7 +1,13 @@
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useDatasetInfo, useDatasetUpload } from "../services/api";
-import axios from "axios";
+import type { DatasetUploadPhase } from "../types/api";
+import {
+  extractApiErrorMessage,
+  MULTIPART_UPLOAD_MAX_BYTES,
+  shouldUseGcsUpload,
+  uploadPhaseLabel,
+} from "../utils/datasetUpload";
 
 const MAX_CSV_BYTES = 100 * 1024 * 1024;
 
@@ -28,7 +34,13 @@ export default function DatasetUploadPanel() {
   const { data: datasetInfo, isLoading: infoLoading, isFetched } =
     useDatasetInfo();
   const hasDataset = (datasetInfo?.meters.length ?? 0) > 0;
+  const [uploadPhase, setUploadPhase] = useState<DatasetUploadPhase | null>(
+    null,
+  );
   const upload = useDatasetUpload();
+
+  const usesGcs =
+    csvFile && jsonFile ? shouldUseGcsUpload(csvFile, jsonFile) : false;
 
   const handleCsvChange = (file: File | null) => {
     if (!file) {
@@ -63,10 +75,12 @@ export default function DatasetUploadPanel() {
       toast.error("Select both the energy CSV and holiday JSON files");
       return;
     }
+    setUploadPhase(null);
     try {
       const result = await upload.mutateAsync({
         energyCsv: csvFile,
         holidayJson: jsonFile,
+        onPhase: setUploadPhase,
       });
       toast.success(result.message ?? "Dataset uploaded successfully");
       setCsvFile(null);
@@ -74,13 +88,9 @@ export default function DatasetUploadPanel() {
       if (csvInputRef.current) csvInputRef.current.value = "";
       if (jsonInputRef.current) jsonInputRef.current.value = "";
     } catch (err) {
-      const message =
-        axios.isAxiosError(err) && typeof err.response?.data?.detail === "string"
-          ? err.response.data.detail
-          : err instanceof Error
-            ? err.message
-            : "Upload failed";
-      toast.error(message);
+      toast.error(extractApiErrorMessage(err));
+    } finally {
+      setUploadPhase(null);
     }
   };
 
@@ -167,8 +177,21 @@ export default function DatasetUploadPanel() {
 
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Upload replaces the single active dataset used by all analytics
-            endpoints. Both files are required.
+            endpoints. Both files are required. Files under{" "}
+            {formatBytes(MULTIPART_UPLOAD_MAX_BYTES)} total use direct upload;
+            larger files upload to cloud storage first (recommended on Cloud Run).
           </p>
+
+          {csvFile && jsonFile && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Upload method:{" "}
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {usesGcs
+                  ? "GCS signed URLs → confirm"
+                  : "Multipart POST /dataset/upload"}
+              </span>
+            </p>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -238,7 +261,9 @@ export default function DatasetUploadPanel() {
             disabled={!csvFile || !jsonFile || upload.isPending}
             className="px-5 py-2.5 text-sm font-semibold bg-[#ba0c2f] text-white rounded-lg hover:bg-[#9a0a26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {upload.isPending ? "Uploading…" : "Upload dataset"}
+            {upload.isPending
+              ? uploadPhaseLabel(uploadPhase)
+              : "Upload dataset"}
           </button>
         </div>
       )}

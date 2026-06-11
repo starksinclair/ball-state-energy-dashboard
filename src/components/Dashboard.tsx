@@ -10,6 +10,7 @@ import EdaPlotsPanel from "./EdaPlotsPanel";
 import bsuLogo from "../assets/bsu-logo.png";
 import { PLOT_TYPES } from "../constants/plotTypes";
 import { useDarkMode } from "../hooks/use-darkmode";
+import { useAnalysisFetching } from "../services/api";
 
 export default function Dashboard() {
   const { darkMode, toggleDarkMode } = useDarkMode();
@@ -37,9 +38,11 @@ export default function Dashboard() {
     setSelectedPlotType(plotType);
   };
 
-  // Get the submit params for the currently active plot
   const activeSubmitParams = plotSubmitParams[selectedPlotType] ?? null;
-
+  const isAnalysisLoading = useAnalysisFetching(
+    selectedPlotType,
+    activeSubmitParams,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -130,7 +133,7 @@ export default function Dashboard() {
 
         <ParameterForm
           onSubmit={handleSubmit}
-          isLoading={false}
+          isLoading={isAnalysisLoading}
           resetSignal={resetFormSignal}
           initialValues={activeSubmitParams}
           selectedPlotType={selectedPlotType}

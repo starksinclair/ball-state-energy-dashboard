@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   Line,
   XAxis,
@@ -14,22 +13,15 @@ import type { BaseRequest } from "../types/api";
 import { useTimeSeries } from "../services/api";
 import { AxiosError } from "axios";
 import ForecastPlot from "./ForecastPlot";
+import { normalizeOutliers } from "../utils/outliers";
 
 interface TimeSeriesPlotProps {
   submitParams?: BaseRequest | null;
 }
 
 export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
-  const [queryParams, setQueryParams] = useState<BaseRequest | null>(null);
-  // Update internal state when submitParams changes
-  useEffect(() => {
-    if (submitParams) {
-      setQueryParams(submitParams);
-    }
-  }, [submitParams]);
-
   const { data, isLoading, error } = useTimeSeries(
-    queryParams || {
+    submitParams || {
       start_date: "",
       end_date: "",
       meter: "",
@@ -37,11 +29,11 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       smoothing_window: 7,
       cleaning_method: "None",
     },
-    { enabled: !!queryParams }
+    { enabled: !!submitParams }
   );
 
   // If modeling returned forecast_time_series, render ForecastPlot
-  if ((queryParams?.forecast || queryParams?.assessment) && data?.forecast_time_series) {
+  if ((submitParams?.forecast || submitParams?.assessment) && data?.forecast_time_series) {
     return <ForecastPlot submitParams={submitParams} forecastData={data.forecast_time_series} timeSeriesData={data} />;
   }
 
@@ -80,7 +72,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
   //   });
   // }, [data?.outliers]);
 
-  if (!queryParams) {
+  if (!submitParams) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
@@ -123,12 +115,12 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
   }
 
   // If modeling returned forecast_time_series, render ForecastPlot
-  if ((queryParams?.forecast || queryParams?.assessment) && data?.forecast_time_series) {
+  if ((submitParams?.forecast || submitParams?.assessment) && data?.forecast_time_series) {
     return <ForecastPlot submitParams={submitParams} forecastData={data.forecast_time_series} timeSeriesData={data} />;
   }
 
   const assessmentComparisonData =
-    queryParams?.assessment && data.forecast_time_series
+    submitParams?.assessment && data.forecast_time_series
       ? data.forecast_time_series
           .filter((row) => row.y != null && (row.yhat != null || row.trend != null))
           .map((row) => ({
@@ -140,6 +132,10 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
             predicted: (row.yhat ?? row.trend) as number,
           }))
       : [];
+
+  const outliers = data.outliers?.length
+    ? normalizeOutliers(data.outliers)
+    : [];
 
   // Regular time series plot
   if (!data.time_series) {
@@ -275,7 +271,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
         </div>
       )}
 
-      {queryParams?.assessment && data.assessment && (
+      {submitParams?.assessment && data.assessment && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
           <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
             Assessment Metrics
@@ -335,7 +331,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
         </div>
       )}
 
-      {queryParams?.assessment && data.assessment_plot_png_base64 && (
+      {submitParams?.assessment && data.assessment_plot_png_base64 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
           <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
             Assessment Plot
@@ -348,7 +344,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
         </div>
       )}
 
-      {queryParams?.assessment && assessmentComparisonData.length > 0 && (
+      {submitParams?.assessment && assessmentComparisonData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
           <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
             Assessment Test Window: Actual vs Predicted
@@ -470,14 +466,14 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       </div>
 
       {/* Outliers Table */}
-      {data.outliers && data.outliers.length > 0 && (
+      {outliers.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
           <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
-            Detected Outliers ({data.outliers.length})
+            Detected Outliers ({outliers.length})
           </h3>
-          <div className="overflow-x-auto">
+          <div className="max-h-80 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date & Time
@@ -491,8 +487,8 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {data.outliers.map((outlier, index) => {
-                  const deviation = outlier.Value - data.statistics.mean;
+                {outliers.map((outlier, index) => {
+                  const deviation = outlier.value - data.statistics.mean;
                   const deviationPercent = (
                     (deviation / data.statistics.mean) *
                     100
@@ -500,10 +496,10 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                   return (
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {new Date(outlier.DateTime).toLocaleString()}
+                        {new Date(outlier.datetime).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-[#ba0c2f] dark:text-red-400">
-                        {outlier?.Value?.toFixed(2)}
+                        {outlier.value.toFixed(2)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         <span

@@ -1,5 +1,6 @@
 import {
   keepPreviousData,
+  useIsFetching,
   useMutation,
   useQuery,
   useQueryClient,
@@ -24,8 +25,17 @@ import {
   isDatasetInfoResponse,
   isMeterListResponse,
 } from "../utils/datasetFallbacks";
+import { uploadDatasetFiles } from "../utils/datasetUpload";
+import type { DatasetUploadPhase, PlotType } from "../types/api";
+import {
+  analysisQueryKey,
+  edaPlotQueryKey,
+  seasonalAnalysisQueryKey,
+  temperatureAnalysisQueryKey,
+  timeSeriesQueryKey,
+} from "../utils/analysisQueryKeys";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://0.0.0.0:8000";
 const API_URL = `${API_BASE}/api`;
 
 async function fetchMeterListSafe(): Promise<MeterListResponse> {
@@ -60,61 +70,7 @@ export const useTimeSeries = (
   options?: { enabled?: boolean },
 ) => {
   return useQuery({
-    queryKey: [
-      "time-series",
-      request.start_date,
-      request.end_date,
-      request.meter,
-      request.smoothing_method,
-      request.smoothing_window,
-      request.cleaning_method,
-      request.cleaning_window,
-      request.cleaning_n_sigma,
-      request.cleaning_interval_width,
-      request.meters_to_add,
-      request.forecast,
-      request.assessment,
-      request.test_hours,
-      request.model,
-      request.interval_type,
-      request.interval_width,
-      request.sarimax_order,
-      request.sarimax_seasonal_order,
-      request.sarimax_trend,
-      request.sarimax_enforce_stationarity,
-      request.sarimax_enforce_invertibility,
-      request.sarimax_concentrate_scale,
-      request.sarimax_measurement_error,
-      request.sarimax_simple_differencing,
-      request.sarimax_method,
-      request.sarimax_maxiter,
-      request.sarimax_cov_type,
-      request.prophet_changepoint_prior_scale,
-      request.prophet_seasonality_prior_scale,
-      request.prophet_holidays_prior_scale,
-      request.prophet_n_changepoints,
-      request.prophet_changepoint_range,
-      request.prophet_growth,
-      request.prophet_weekly_seasonality,
-      request.prophet_daily_seasonality,
-      request.prophet_mcmc_samples,
-      request.n_lags,
-      request.n_forecasts,
-      request.lagged_features,
-      request.feature_lags,
-      request.epochs,
-      request.n_changepoints,
-      request.changepoints_range,
-      request.trend_reg,
-      request.seasonality_reg,
-      request.seasonality_mode,
-      request.yearly_seasonality,
-      request.ar_reg,
-      request.learning_rate,
-      request.batch_size,
-      request.newer_samples_weight,
-      request.features,
-    ],
+    queryKey: timeSeriesQueryKey(request),
     queryFn: async () => {
       const params: BaseRequest = {
         start_date: request.start_date,
@@ -300,17 +256,7 @@ export const useSeasonalAnalysis = (
   options?: { enabled?: boolean },
 ) => {
   return useQuery({
-    queryKey: [
-      "seasonal-analysis",
-      request.start_date,
-      request.end_date,
-      request.meter,
-      request.meters_to_add,
-      request.cleaning_method,
-      request.cleaning_window,
-      request.cleaning_n_sigma,
-      request.cleaning_interval_width,
-    ],
+    queryKey: seasonalAnalysisQueryKey(request),
     queryFn: async () => {
       const response = await axios.get<SeasonalAnalysisResponse>(
         `${API_URL}/seasonal-analysis`,
@@ -352,19 +298,20 @@ export const useDatasetInfo = () => {
   });
 };
 
-export async function uploadDataset(files: {
+export interface DatasetUploadInput {
   energyCsv: File;
   holidayJson: File;
-}): Promise<DatasetUploadResponse> {
-  const form = new FormData();
-  form.append("energy_csv", files.energyCsv);
-  form.append("holiday_json", files.holidayJson);
-  const response = await axios.post<DatasetUploadResponse>(
-    `${API_URL}/dataset/upload`,
-    form,
-    { headers: { "Content-Type": "multipart/form-data" } },
+  onPhase?: (phase: DatasetUploadPhase) => void;
+}
+
+export async function uploadDataset(
+  input: DatasetUploadInput,
+): Promise<DatasetUploadResponse> {
+  return uploadDatasetFiles(
+    API_URL,
+    { energyCsv: input.energyCsv, holidayJson: input.holidayJson },
+    input.onPhase,
   );
-  return response.data;
 }
 
 export function useDatasetUpload() {
@@ -393,17 +340,7 @@ export const useTemperatureAnalysis = (
   options?: { enabled?: boolean },
 ) => {
   return useQuery({
-    queryKey: [
-      "temperature-analysis",
-      request.start_date,
-      request.end_date,
-      request.meter,
-      request.meters_to_add,
-      request.cleaning_method,
-      request.cleaning_window,
-      request.cleaning_n_sigma,
-      request.cleaning_interval_width,
-    ],
+    queryKey: temperatureAnalysisQueryKey(request),
     queryFn: async () => {
       const response = await axios.get<TemperatureAnalysisResponse>(
         `${API_URL}/temperature-analysis`,
@@ -506,32 +443,7 @@ export const useEdaPlot = (
   options?: { enabled?: boolean },
 ) => {
   return useQuery({
-    queryKey: [
-      "eda-plot",
-      request?.eda_route,
-      request?.start_date,
-      request?.end_date,
-      request?.meter,
-      request?.meters_to_add,
-      request?.cleaning_method,
-      request?.cleaning_window,
-      request?.cleaning_n_sigma,
-      request?.cleaning_interval_width,
-      request?.seasonal_periods,
-      request?.seasonality_periods,
-      request?.n_harmonics,
-      request?.use_hac,
-      request?.include_kruskal_wallis,
-      request?.kw_tests,
-      request?.unit_root_regression,
-      request?.include_break_test,
-      request?.decompose_period,
-      request?.decompose_model,
-      request?.acf_lags,
-      request?.smoothing_method,
-      request?.smoothing_window,
-      request?.annotated,
-    ],
+    queryKey: request ? edaPlotQueryKey(request) : ["eda-plot", "disabled"],
     queryFn: async () => {
       if (!request?.eda_route) throw new Error("No EDA route selected");
 
@@ -604,6 +516,19 @@ export const useEdaPlot = (
     placeholderData: keepPreviousData,
   });
 };
+
+/** True while the active plot type's analysis query is in flight. */
+export function useAnalysisFetching(
+  plotType: PlotType,
+  request: BaseRequest | null,
+): boolean {
+  const queryKey = analysisQueryKey(plotType, request);
+  const fetchingCount = useIsFetching({
+    queryKey: queryKey ?? ["analysis", "idle"],
+    exact: true,
+  });
+  return !!queryKey && fetchingCount > 0;
+}
 
 export async function sendChatMessage(
   request: ChatRequest,
