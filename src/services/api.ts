@@ -17,6 +17,7 @@ import type {
   ChatRequest,
   ChatResponse,
   EdaResponse,
+  OverageThresholdResponse,
 } from "../types/api";
 import axios from "axios";
 import {
@@ -30,6 +31,7 @@ import type { DatasetUploadPhase, PlotType } from "../types/api";
 import {
   analysisQueryKey,
   edaPlotQueryKey,
+  overageThresholdQueryKey,
   seasonalAnalysisQueryKey,
   temperatureAnalysisQueryKey,
   timeSeriesQueryKey,
@@ -512,6 +514,108 @@ export const useEdaPlot = (
       return response.data;
     },
     enabled: !!request && !!request.eda_route && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 60 * 24,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useOverageThreshold = (
+  request: BaseRequest | null,
+  options?: { enabled?: boolean },
+) => {
+  return useQuery({
+    queryKey: request
+      ? overageThresholdQueryKey(request)
+      : ["overage-threshold", "disabled"],
+    queryFn: async () => {
+      if (!request) throw new Error("No request provided");
+
+      const body: Record<string, unknown> = {
+        start_date: request.start_date.slice(0, 10),
+        end_date: request.end_date.slice(0, 10),
+        main_meter: request.meter,
+        threshold_mode: request.threshold_mode ?? "rpca",
+      };
+
+      if (request.meters_to_add) body.meters_to_add = request.meters_to_add;
+      if (request.meters?.length) body.meters = request.meters;
+      if (request.threshold_mode === "fixed" && request.threshold !== undefined) {
+        body.threshold = request.threshold;
+      }
+      if (request.analysis_window_start) {
+        body.analysis_window_start = request.analysis_window_start;
+      }
+      if (request.analysis_window_end) {
+        body.analysis_window_end = request.analysis_window_end;
+      }
+      if (request.contribution_window_start) {
+        body.contribution_window_start = request.contribution_window_start;
+      }
+      if (request.contribution_window_end) {
+        body.contribution_window_end = request.contribution_window_end;
+      }
+      if (request.plot_window_start) {
+        body.plot_window_start = request.plot_window_start;
+      }
+      if (request.plot_window_end) {
+        body.plot_window_end = request.plot_window_end;
+      }
+      if (request.series_meters?.length) {
+        body.series_meters = request.series_meters;
+      }
+      if (request.contributions_top_n !== undefined) {
+        body.contributions_top_n = request.contributions_top_n;
+      }
+      if (request.event_contributions_top_n !== undefined) {
+        body.event_contributions_top_n = request.event_contributions_top_n;
+      }
+      if (request.contributions_method) {
+        body.contributions_method = request.contributions_method;
+      }
+      if (request.heatmap_normalize !== undefined) {
+        body.heatmap_normalize = request.heatmap_normalize;
+      }
+      if (request.heatmap_top_n !== undefined) {
+        body.heatmap_top_n = request.heatmap_top_n;
+      }
+      if (request.clean_all_meters !== undefined) {
+        body.clean_all_meters = request.clean_all_meters;
+      }
+      if (request.cleaning_method) {
+        body.cleaning_method = request.cleaning_method;
+      }
+      if (request.cleaning_window !== undefined) {
+        body.cleaning_window = request.cleaning_window;
+      }
+      if (request.cleaning_n_sigma !== undefined) {
+        body.cleaning_n_sigma = request.cleaning_n_sigma;
+      }
+      if (request.cleaning_interval_width !== undefined) {
+        body.cleaning_interval_width = request.cleaning_interval_width;
+      }
+      if (request.n_thresholds !== undefined) {
+        body.n_thresholds = request.n_thresholds;
+      }
+      if (request.threshold_min !== undefined) {
+        body.threshold_min = request.threshold_min;
+      }
+      if (request.threshold_max !== undefined) {
+        body.threshold_max = request.threshold_max;
+      }
+      if (request.rpca_tol !== undefined) {
+        body.rpca_tol = request.rpca_tol;
+      }
+      if (request.rpca_max_iter !== undefined) {
+        body.rpca_max_iter = request.rpca_max_iter;
+      }
+
+      const response = await axios.post<OverageThresholdResponse>(
+        `${API_URL}/overage/threshold-optimization`,
+        body,
+      );
+      return response.data;
+    },
+    enabled: !!request && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 60 * 24,
     placeholderData: keepPreviousData,
   });

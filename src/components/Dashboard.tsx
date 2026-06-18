@@ -7,6 +7,7 @@ import TemperatureAnalysisPlot from "./TemperatureAnalysisPlot";
 import ChatbotWidget from "./ChatbotWidget";
 import DatasetUploadPanel from "./DatasetUploadPanel";
 import EdaPlotsPanel from "./EdaPlotsPanel";
+import ThresholdDetectionPanel from "./ThresholdDetectionPanel";
 import bsuLogo from "../assets/bsu-logo.png";
 import { PLOT_TYPES } from "../constants/plotTypes";
 import { useDarkMode } from "../hooks/use-darkmode";
@@ -88,7 +89,7 @@ export default function Dashboard() {
         <h2 className="text-xl font-semibold text-[#003DA5] dark:text-blue-400 mb-4">
           Select Plot Type
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {PLOT_TYPES.map((plotType) => (
             <button
               key={plotType.id}
@@ -157,6 +158,10 @@ export default function Dashboard() {
         {/* EDA Plots Display */}
         {selectedPlotType === "eda-plots" && (
           <EdaPlotsPanel submitParams={activeSubmitParams} />
+        )}
+
+        {selectedPlotType === "threshold-detection" && (
+          <ThresholdDetectionPanel submitParams={activeSubmitParams} />
         )}
 
       </main>

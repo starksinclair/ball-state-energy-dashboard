@@ -89,5 +89,28 @@ export interface ParameterFormState {
   edaAnnotated: boolean;
   edaSmoothingMethod: "ma" | "hp";
   edaSmoothingWindow: number;
+  thresholdMode: "rpca" | "fixed";
+  threshold: string;
+  includedMeters: string[];
+  seriesMeters: string[];
+  analysisWindowStart: string;
+  analysisWindowEnd: string;
+  contributionWindowStart: string;
+  contributionWindowEnd: string;
+  plotWindowStart: string;
+  plotWindowEnd: string;
+  contributionsTopN: number;
+  eventContributionsTopN: number;
+  contributionsMethod: "sparse" | "raw";
+  heatmapNormalize: boolean;
+  heatmapTopN: number;
+  cleanAllMeters: boolean;
+  nThresholds: number;
+  thresholdMin: string;
+  thresholdMax: string;
+  rpcaTol: number;
+  rpcaMaxIter: number;
+  showThresholdAdvanced: boolean;
+  thresholdMeterFilter: string;
 }
 

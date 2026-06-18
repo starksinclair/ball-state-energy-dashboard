@@ -6,6 +6,7 @@ import { ParameterFormHeader } from "./ParameterFormHeader";
 import { EdaRouteSelector } from "./sections/EdaRouteSelector";
 import { EssentialParametersSection } from "./sections/EssentialParametersSection";
 import { EdaOptionsSection } from "./sections/EdaOptionsSection";
+import { ThresholdOptionsSection } from "./sections/ThresholdOptionsSection";
 import { ForecastOptionsSection } from "./sections/ForecastOptionsSection";
 import { SmoothingOptionsSection } from "./sections/SmoothingOptionsSection";
 import { MeterGroupsSection } from "./sections/MeterGroupsSection";
@@ -64,6 +65,10 @@ export default function ParameterForm({
 
         {selectedPlotType === "eda-plots" && (
           <EdaRouteSelector form={form} />
+        )}
+
+        {selectedPlotType === "threshold-detection" && (
+          <ThresholdOptionsSection form={form} />
         )}
 
         <div className="space-y-4">

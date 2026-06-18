@@ -161,6 +161,29 @@ export interface BaseRequest {
   acf_lags?: number;
   /** annotated-timeseries: shade covariate regions. Default true. */
   annotated?: boolean;
+  // Overage threshold fields
+  threshold_mode?: "rpca" | "fixed";
+  threshold?: number;
+  /** RPCA decomposition columns (included meters). */
+  meters?: string[];
+  analysis_window_start?: string;
+  analysis_window_end?: string;
+  contribution_window_start?: string;
+  contribution_window_end?: string;
+  plot_window_start?: string;
+  plot_window_end?: string;
+  series_meters?: string[];
+  contributions_top_n?: number;
+  event_contributions_top_n?: number;
+  contributions_method?: "sparse" | "raw";
+  heatmap_normalize?: boolean;
+  heatmap_top_n?: number;
+  clean_all_meters?: boolean;
+  n_thresholds?: number;
+  threshold_min?: number;
+  threshold_max?: number;
+  rpca_tol?: number;
+  rpca_max_iter?: number;
 }
 
 /** Chatbot: provider-agnostic messages to/from backend `/api/chat`. */
@@ -412,13 +435,89 @@ export type EdaResponse =
   | EdaUnitRootTestsResponse
   | EdaPlotResponse;
 
+// Overage threshold response types
+export interface OverageSummary {
+  data_hours: number;
+  data_meters: number;
+  data_start: string;
+  data_end: string;
+  main_meter: string;
+  threshold: number;
+  lambda: number;
+  mu: number;
+  converged: boolean;
+  iterations: number;
+  final_delta: number;
+  rank_l: number;
+  s_nonzero_share: number;
+  overage_hours: number;
+  overage_event_count: number;
+}
+
+export interface OverageEvent {
+  start: string;
+  end: string;
+  duration_hours: number;
+  peak: number;
+  total_exceedance: number;
+}
+
+export interface OverageContribution {
+  meter: string;
+  contribution: number;
+  method: string;
+}
+
+export interface EventContribution {
+  event_start: string;
+  event_end: string;
+  duration_hours: number;
+  total_exceedance: number;
+  rank: number;
+  meter: string;
+  contribution: number;
+}
+
+export interface ThresholdSweepPoint {
+  threshold: number;
+  n_overage_hours: number;
+  n_events: number;
+}
+
+export interface ThresholdOptimization {
+  recommended_threshold: number;
+  selection_method: string;
+  threshold_range: { min: number; max: number; n_thresholds: number };
+  percentile_thresholds: { p90: number; p95: number; p99: number };
+  threshold_sweep: ThresholdSweepPoint[];
+}
+
+export interface OverageThresholdResponse {
+  success: boolean;
+  main_meter: string;
+  threshold_mode: "rpca" | "fixed";
+  threshold: number;
+  analysis_window: { start: string; end: string };
+  date_range: { start: string; end: string };
+  meters: string[];
+  summary: OverageSummary;
+  overage_events: OverageEvent[];
+  contributions: OverageContribution[];
+  event_contributions: EventContribution[];
+  heatmap_plot_png_base64: string;
+  series_plot_png_base64: string;
+  threshold_optimization?: ThresholdOptimization;
+  threshold_sweep_plot_png_base64?: string;
+}
+
 // Plot Types
 export type PlotType =
   | "time-series"
   | "forecast"
   | "seasonal-analysis"
   | "temperature-analysis"
-  | "eda-plots";
+  | "eda-plots"
+  | "threshold-detection";
 
 export type FormField =
   | "start_date"

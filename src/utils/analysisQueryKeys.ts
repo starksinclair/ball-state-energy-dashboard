@@ -139,6 +139,41 @@ export function edaPlotQueryKey(request: BaseRequest) {
   ] as const;
 }
 
+export function overageThresholdQueryKey(request: BaseRequest) {
+  return [
+    "overage-threshold",
+    request.start_date,
+    request.end_date,
+    request.meter,
+    request.meters_to_add,
+    request.cleaning_method,
+    request.cleaning_window,
+    request.cleaning_n_sigma,
+    request.cleaning_interval_width,
+    request.threshold_mode,
+    request.threshold,
+    request.meters,
+    request.analysis_window_start,
+    request.analysis_window_end,
+    request.contribution_window_start,
+    request.contribution_window_end,
+    request.plot_window_start,
+    request.plot_window_end,
+    request.series_meters,
+    request.contributions_top_n,
+    request.event_contributions_top_n,
+    request.contributions_method,
+    request.heatmap_normalize,
+    request.heatmap_top_n,
+    request.clean_all_meters,
+    request.n_thresholds,
+    request.threshold_min,
+    request.threshold_max,
+    request.rpca_tol,
+    request.rpca_max_iter,
+  ] as const;
+}
+
 export function analysisQueryKey(
   plotType: PlotType,
   request: BaseRequest | null,
@@ -155,6 +190,8 @@ export function analysisQueryKey(
       return temperatureAnalysisQueryKey(request);
     case "eda-plots":
       return request.eda_route ? edaPlotQueryKey(request) : null;
+    case "threshold-detection":
+      return overageThresholdQueryKey(request);
     default:
       return null;
   }

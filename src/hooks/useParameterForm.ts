@@ -15,6 +15,15 @@ import {
 } from "../utils/parameter-form/edaJsonSync";
 import { prophetSeasonalityBoolFromInitial } from "../utils/parameter-form/seasonalityResolvers";
 import { applyDatePreset as computeDatePreset } from "../utils/parameter-form/applyDatePreset";
+import {
+  CONTRIBUTIONS_METHOD_DEFAULT,
+  THRESHOLD_BOOL_DEFAULTS,
+  THRESHOLD_MODE_DEFAULT,
+  THRESHOLD_NUMERIC_DEFAULTS,
+  defaultAnalysisWindow,
+  defaultContributionWindow,
+  defaultPlotWindow,
+} from "../constants/thresholdDefaults";
 import type { ParameterFormBindings } from "../components/parameter-form/types";
 import type { MeterListResponse } from "../types/api";
 
@@ -157,6 +166,62 @@ export function useParameterForm({
   const [edaAnnotated, setEdaAnnotated] = useState(true);
   const [edaSmoothingMethod, setEdaSmoothingMethod] = useState<"ma" | "hp">("hp");
   const [edaSmoothingWindow, setEdaSmoothingWindow] = useState(200);
+  const analysisDefaults = defaultAnalysisWindow(meterList?.time_range);
+  const contributionDefaults = defaultContributionWindow();
+  const plotDefaults = defaultPlotWindow();
+  const [thresholdMode, setThresholdMode] = useState<"rpca" | "fixed">(
+    THRESHOLD_MODE_DEFAULT,
+  );
+  const [threshold, setThreshold] = useState("");
+  const [includedMeters, setIncludedMeters] = useState<string[]>([]);
+  const [seriesMeters, setSeriesMeters] = useState<string[]>([]);
+  const [analysisWindowStart, setAnalysisWindowStart] = useState<string>(
+    analysisDefaults.start,
+  );
+  const [analysisWindowEnd, setAnalysisWindowEnd] = useState<string>(
+    analysisDefaults.end,
+  );
+  const [contributionWindowStart, setContributionWindowStart] = useState<string>(
+    contributionDefaults.start,
+  );
+  const [contributionWindowEnd, setContributionWindowEnd] = useState<string>(
+    contributionDefaults.end,
+  );
+  const [plotWindowStart, setPlotWindowStart] = useState<string>(
+    plotDefaults.start,
+  );
+  const [plotWindowEnd, setPlotWindowEnd] = useState<string>(plotDefaults.end);
+  const [contributionsTopN, setContributionsTopN] = useState<number>(
+    THRESHOLD_NUMERIC_DEFAULTS.contributions_top_n,
+  );
+  const [eventContributionsTopN, setEventContributionsTopN] = useState<number>(
+    THRESHOLD_NUMERIC_DEFAULTS.event_contributions_top_n,
+  );
+  const [contributionsMethod, setContributionsMethod] = useState<
+    "sparse" | "raw"
+  >(CONTRIBUTIONS_METHOD_DEFAULT);
+  const [heatmapNormalize, setHeatmapNormalize] = useState<boolean>(
+    THRESHOLD_BOOL_DEFAULTS.heatmap_normalize,
+  );
+  const [heatmapTopN, setHeatmapTopN] = useState<number>(
+    THRESHOLD_NUMERIC_DEFAULTS.heatmap_top_n,
+  );
+  const [cleanAllMeters, setCleanAllMeters] = useState<boolean>(
+    THRESHOLD_BOOL_DEFAULTS.clean_all_meters,
+  );
+  const [nThresholds, setNThresholds] = useState<number>(
+    THRESHOLD_NUMERIC_DEFAULTS.n_thresholds,
+  );
+  const [thresholdMin, setThresholdMin] = useState("");
+  const [thresholdMax, setThresholdMax] = useState("");
+  const [rpcaTol, setRpcaTol] = useState<number>(
+    THRESHOLD_NUMERIC_DEFAULTS.rpca_tol,
+  );
+  const [rpcaMaxIter, setRpcaMaxIter] = useState<number>(
+    THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter,
+  );
+  const [showThresholdAdvanced, setShowThresholdAdvanced] = useState(false);
+  const [thresholdMeterFilter, setThresholdMeterFilter] = useState("");
   // Load meter groups from localStorage on mount
   useEffect(() => {
     const savedGroups = localStorage.getItem("meterGroups");
@@ -275,7 +340,35 @@ export function useParameterForm({
     setEdaAnnotated(true);
     setEdaSmoothingMethod("hp");
     setEdaSmoothingWindow(200);
-  }, [resetSignal]);
+    const resetAnalysis = defaultAnalysisWindow(meterList?.time_range);
+    const resetContribution = defaultContributionWindow();
+    const resetPlot = defaultPlotWindow();
+    setThresholdMode(THRESHOLD_MODE_DEFAULT);
+    setThreshold("");
+    setIncludedMeters(meterList?.meters ? [...meterList.meters] : []);
+    setSeriesMeters([]);
+    setAnalysisWindowStart(resetAnalysis.start);
+    setAnalysisWindowEnd(resetAnalysis.end);
+    setContributionWindowStart(resetContribution.start);
+    setContributionWindowEnd(resetContribution.end);
+    setPlotWindowStart(resetPlot.start);
+    setPlotWindowEnd(resetPlot.end);
+    setContributionsTopN(THRESHOLD_NUMERIC_DEFAULTS.contributions_top_n);
+    setEventContributionsTopN(
+      THRESHOLD_NUMERIC_DEFAULTS.event_contributions_top_n,
+    );
+    setContributionsMethod(CONTRIBUTIONS_METHOD_DEFAULT);
+    setHeatmapNormalize(THRESHOLD_BOOL_DEFAULTS.heatmap_normalize);
+    setHeatmapTopN(THRESHOLD_NUMERIC_DEFAULTS.heatmap_top_n);
+    setCleanAllMeters(THRESHOLD_BOOL_DEFAULTS.clean_all_meters);
+    setNThresholds(THRESHOLD_NUMERIC_DEFAULTS.n_thresholds);
+    setThresholdMin("");
+    setThresholdMax("");
+    setRpcaTol(THRESHOLD_NUMERIC_DEFAULTS.rpca_tol);
+    setRpcaMaxIter(THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter);
+    setShowThresholdAdvanced(false);
+    setThresholdMeterFilter("");
+  }, [resetSignal, meterList?.meters, meterList?.time_range]);
 
   useEffect(() => {
     if (!initialValues) return;
@@ -528,7 +621,84 @@ export function useParameterForm({
       );
       setMeterGroups(groups);
     }
+    if (initialValues.threshold_mode) {
+      setThresholdMode(initialValues.threshold_mode);
+    }
+    if (initialValues.threshold !== undefined) {
+      setThreshold(String(initialValues.threshold));
+    }
+    if (initialValues.meters?.length) {
+      setIncludedMeters(initialValues.meters);
+    }
+    if (initialValues.series_meters?.length) {
+      setSeriesMeters(initialValues.series_meters);
+    }
+    if (initialValues.analysis_window_start) {
+      setAnalysisWindowStart(initialValues.analysis_window_start);
+    }
+    if (initialValues.analysis_window_end) {
+      setAnalysisWindowEnd(initialValues.analysis_window_end);
+    }
+    if (initialValues.contribution_window_start) {
+      setContributionWindowStart(initialValues.contribution_window_start);
+    }
+    if (initialValues.contribution_window_end) {
+      setContributionWindowEnd(initialValues.contribution_window_end);
+    }
+    if (initialValues.plot_window_start) {
+      setPlotWindowStart(initialValues.plot_window_start);
+    }
+    if (initialValues.plot_window_end) {
+      setPlotWindowEnd(initialValues.plot_window_end);
+    }
+    if (initialValues.contributions_top_n !== undefined) {
+      setContributionsTopN(initialValues.contributions_top_n);
+    }
+    if (initialValues.event_contributions_top_n !== undefined) {
+      setEventContributionsTopN(initialValues.event_contributions_top_n);
+    }
+    if (initialValues.contributions_method) {
+      setContributionsMethod(initialValues.contributions_method);
+    }
+    if (initialValues.heatmap_normalize !== undefined) {
+      setHeatmapNormalize(initialValues.heatmap_normalize);
+    }
+    if (initialValues.heatmap_top_n !== undefined) {
+      setHeatmapTopN(initialValues.heatmap_top_n);
+    }
+    if (initialValues.clean_all_meters !== undefined) {
+      setCleanAllMeters(initialValues.clean_all_meters);
+    }
+    if (initialValues.n_thresholds !== undefined) {
+      setNThresholds(initialValues.n_thresholds);
+    }
+    if (initialValues.threshold_min !== undefined) {
+      setThresholdMin(String(initialValues.threshold_min));
+    }
+    if (initialValues.threshold_max !== undefined) {
+      setThresholdMax(String(initialValues.threshold_max));
+    }
+    if (initialValues.rpca_tol !== undefined) {
+      setRpcaTol(initialValues.rpca_tol);
+    }
+    if (initialValues.rpca_max_iter !== undefined) {
+      setRpcaMaxIter(initialValues.rpca_max_iter);
+    }
   }, [initialValues]);
+
+  useEffect(() => {
+    if (selectedPlotType !== "threshold-detection") return;
+    if (meterList?.meters.length && includedMeters.length === 0) {
+      setIncludedMeters([...meterList.meters]);
+    }
+  }, [selectedPlotType, meterList?.meters, includedMeters.length]);
+
+  useEffect(() => {
+    if (selectedPlotType !== "threshold-detection") return;
+    const windows = defaultAnalysisWindow(meterList?.time_range);
+    setAnalysisWindowStart((prev) => prev || windows.start);
+    setAnalysisWindowEnd((prev) => prev || windows.end);
+  }, [selectedPlotType, meterList?.time_range]);
   const addMeterGroup = () => {
     const newId = `group-${Date.now()}`;
     const updatedGroups = [
@@ -729,6 +899,29 @@ export function useParameterForm({
     edaAnnotated,
     edaSmoothingMethod,
     edaSmoothingWindow,
+    thresholdMode,
+    threshold,
+    includedMeters,
+    seriesMeters,
+    analysisWindowStart,
+    analysisWindowEnd,
+    contributionWindowStart,
+    contributionWindowEnd,
+    plotWindowStart,
+    plotWindowEnd,
+    contributionsTopN,
+    eventContributionsTopN,
+    contributionsMethod,
+    heatmapNormalize,
+    heatmapTopN,
+    cleanAllMeters,
+    nThresholds,
+    thresholdMin,
+    thresholdMax,
+    rpcaTol,
+    rpcaMaxIter,
+    showThresholdAdvanced,
+    thresholdMeterFilter,
     meterGroups,
     editingGroupId,
     showMeterGroups,
@@ -813,6 +1006,29 @@ export function useParameterForm({
     setEdaAnnotated,
     setEdaSmoothingMethod,
     setEdaSmoothingWindow,
+    setThresholdMode,
+    setThreshold,
+    setIncludedMeters,
+    setSeriesMeters,
+    setAnalysisWindowStart,
+    setAnalysisWindowEnd,
+    setContributionWindowStart,
+    setContributionWindowEnd,
+    setPlotWindowStart,
+    setPlotWindowEnd,
+    setContributionsTopN,
+    setEventContributionsTopN,
+    setContributionsMethod,
+    setHeatmapNormalize,
+    setHeatmapTopN,
+    setCleanAllMeters,
+    setNThresholds,
+    setThresholdMin,
+    setThresholdMax,
+    setRpcaTol,
+    setRpcaMaxIter,
+    setShowThresholdAdvanced,
+    setThresholdMeterFilter,
     setMeterGroups,
     setEditingGroupId,
     setShowMeterGroups,

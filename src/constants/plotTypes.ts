@@ -37,4 +37,11 @@ export const PLOT_TYPES: PlotTypeConfig[] = [
     available: true,
     fields: ["start_date", "end_date", "meter", "cleaning_method"],
   },
+  {
+    id: "threshold-detection",
+    label: "Threshold Detection",
+    description: "Overage threshold optimization and event analysis",
+    available: true,
+    fields: ["start_date", "end_date", "meter", "cleaning_method"],
+  },
 ];

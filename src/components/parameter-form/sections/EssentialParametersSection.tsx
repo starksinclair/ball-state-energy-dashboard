@@ -99,9 +99,13 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                 htmlFor="meter"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
-                Meter
+                {form.selectedPlotType === "threshold-detection"
+                  ? "Main Meter"
+                  : "Meter"}
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                  Select a meter or create a group below
+                  {form.selectedPlotType === "threshold-detection"
+                    ? "Main meter — column checked against threshold"
+                    : "Select a meter or create a group below"}
                 </span>
               </label>
               <select
