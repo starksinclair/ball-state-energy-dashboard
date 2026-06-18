@@ -1,27 +1,19 @@
+import { MeterMultiSelect } from "../MeterMultiSelect";
 import type { ParameterFormBindings } from "../types";
 
 interface ThresholdOptionsSectionProps {
   form: ParameterFormBindings;
 }
 
-function toggleMeter(list: string[], meter: string, checked: boolean): string[] {
-  if (checked) {
-    return list.includes(meter) ? list : [...list, meter];
-  }
-  return list.filter((m) => m !== meter);
-}
-
 export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) {
   if (form.selectedPlotType !== "threshold-detection") return null;
 
-  const csvMeters = form.meterList?.meters ?? [];
-  const filter = form.thresholdMeterFilter.trim().toLowerCase();
-  const filteredMeters = filter
-    ? csvMeters.filter((m) => m.toLowerCase().includes(filter))
-    : csvMeters;
-  const allSelected =
-    csvMeters.length > 0 &&
-    csvMeters.every((m) => form.includedMeters.includes(m));
+  const rpcaMeters = form.allMeters;
+  const groupNames = new Set(
+    form.meterGroups
+      .filter((group) => group.name && group.meters.length > 0)
+      .map((group) => group.name),
+  );
 
   return (
     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 space-y-4">
@@ -111,79 +103,14 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
         </div>
       </div>
 
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            RPCA Meters
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-              All included by default — uncheck to omit
-            </span>
-          </label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => form.setIncludedMeters([...csvMeters])}
-              disabled={csvMeters.length === 0}
-              className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:border-[#ba0c2f] disabled:opacity-50"
-            >
-              Select all
-            </button>
-            <button
-              type="button"
-              onClick={() => form.setIncludedMeters([])}
-              disabled={csvMeters.length === 0}
-              className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:border-[#ba0c2f] disabled:opacity-50"
-            >
-              Clear all
-            </button>
-          </div>
-        </div>
-        <input
-          type="search"
-          placeholder="Filter meters…"
-          value={form.thresholdMeterFilter}
-          onChange={(e) => form.setThresholdMeterFilter(e.target.value)}
-          className="w-full mb-3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
-        <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1">
-          {csvMeters.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 px-2 py-1">
-              No meters — upload dataset first
-            </p>
-          ) : filteredMeters.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 px-2 py-1">
-              No meters match filter
-            </p>
-          ) : (
-            filteredMeters.map((meterName) => (
-              <label
-                key={meterName}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer text-sm text-gray-800 dark:text-gray-200"
-              >
-                <input
-                  type="checkbox"
-                  checked={form.includedMeters.includes(meterName)}
-                  onChange={(e) =>
-                    form.setIncludedMeters(
-                      toggleMeter(
-                        form.includedMeters,
-                        meterName,
-                        e.target.checked,
-                      ),
-                    )
-                  }
-                  className="rounded border-gray-300 text-[#ba0c2f] focus:ring-[#ba0c2f]"
-                />
-                <span className="truncate">{meterName}</span>
-              </label>
-            ))
-          )}
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          {form.includedMeters.length} of {csvMeters.length} meters selected
-          {!allSelected && csvMeters.length > 0 && " (some omitted)"}
-        </p>
-      </div>
+      <MeterMultiSelect
+        label="RPCA Meters"
+        hint="All included by default — uncheck to omit"
+        options={rpcaMeters}
+        selected={form.includedMeters}
+        onChange={form.setIncludedMeters}
+        groupNames={groupNames}
+      />
 
       <button
         type="button"
@@ -250,32 +177,14 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Series Meters
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                Extra meters on stacked series plot
-              </span>
-            </label>
-            <select
-              multiple
-              value={form.seriesMeters}
-              onChange={(e) => {
-                const selected = Array.from(
-                  e.target.selectedOptions,
-                  (opt) => opt.value,
-                );
-                form.setSeriesMeters(selected);
-              }}
-              className="w-full min-h-[6rem] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              {csvMeters.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+          <MeterMultiSelect
+            label="Series Meters"
+            hint="Extra meters on stacked series plot"
+            options={rpcaMeters}
+            selected={form.seriesMeters}
+            onChange={form.setSeriesMeters}
+            groupNames={groupNames}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

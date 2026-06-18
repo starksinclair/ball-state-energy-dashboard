@@ -144,7 +144,6 @@ export interface ParameterFormBindings extends ParameterFormState {
   setRpcaTol: Setter<number>;
   setRpcaMaxIter: Setter<number>;
   setShowThresholdAdvanced: Setter<boolean>;
-  setThresholdMeterFilter: Setter<string>;
   setMeterGroups: Setter<MeterGroup[]>;
   setEditingGroupId: Setter<string | null>;
   setShowMeterGroups: Setter<boolean>;

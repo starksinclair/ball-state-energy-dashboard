@@ -221,7 +221,6 @@ export function useParameterForm({
     THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter,
   );
   const [showThresholdAdvanced, setShowThresholdAdvanced] = useState(false);
-  const [thresholdMeterFilter, setThresholdMeterFilter] = useState("");
   // Load meter groups from localStorage on mount
   useEffect(() => {
     const savedGroups = localStorage.getItem("meterGroups");
@@ -345,7 +344,10 @@ export function useParameterForm({
     const resetPlot = defaultPlotWindow();
     setThresholdMode(THRESHOLD_MODE_DEFAULT);
     setThreshold("");
-    setIncludedMeters(meterList?.meters ? [...meterList.meters] : []);
+    const groupNames = meterGroups
+      .filter((group) => group.name && group.meters.length > 0)
+      .map((group) => group.name);
+    setIncludedMeters([...(meterList?.meters ?? []), ...groupNames]);
     setSeriesMeters([]);
     setAnalysisWindowStart(resetAnalysis.start);
     setAnalysisWindowEnd(resetAnalysis.end);
@@ -367,7 +369,6 @@ export function useParameterForm({
     setRpcaTol(THRESHOLD_NUMERIC_DEFAULTS.rpca_tol);
     setRpcaMaxIter(THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter);
     setShowThresholdAdvanced(false);
-    setThresholdMeterFilter("");
   }, [resetSignal, meterList?.meters, meterList?.time_range]);
 
   useEffect(() => {
@@ -688,10 +689,10 @@ export function useParameterForm({
 
   useEffect(() => {
     if (selectedPlotType !== "threshold-detection") return;
-    if (meterList?.meters.length && includedMeters.length === 0) {
-      setIncludedMeters([...meterList.meters]);
+    if (allMeters.length && includedMeters.length === 0) {
+      setIncludedMeters([...allMeters]);
     }
-  }, [selectedPlotType, meterList?.meters, includedMeters.length]);
+  }, [selectedPlotType, allMeters, includedMeters.length]);
 
   useEffect(() => {
     if (selectedPlotType !== "threshold-detection") return;
@@ -921,7 +922,6 @@ export function useParameterForm({
     rpcaTol,
     rpcaMaxIter,
     showThresholdAdvanced,
-    thresholdMeterFilter,
     meterGroups,
     editingGroupId,
     showMeterGroups,
@@ -1028,7 +1028,6 @@ export function useParameterForm({
     setRpcaTol,
     setRpcaMaxIter,
     setShowThresholdAdvanced,
-    setThresholdMeterFilter,
     setMeterGroups,
     setEditingGroupId,
     setShowMeterGroups,

@@ -111,6 +111,5 @@ export interface ParameterFormState {
   rpcaTol: number;
   rpcaMaxIter: number;
   showThresholdAdvanced: boolean;
-  thresholdMeterFilter: string;
 }
 
