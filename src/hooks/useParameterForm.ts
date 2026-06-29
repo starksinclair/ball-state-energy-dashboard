@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
-import type { BaseRequest, PlotType, FormField, EdaRoute } from "../types/api";
+import type { BaseRequest, PlotType, FormField, EdaRoute, OutlierZapMode } from "../types/api";
 import { PLOT_TYPES } from "../constants/plotTypes";
 import type {
   NpFeatureLagsUi,
@@ -49,6 +49,8 @@ export function useParameterForm({
     cleaning_n_sigma: 3,
     cleaning_interval_width: 0.8,
   });
+  const [cleaningDaily, setCleaningDaily] = useState(false);
+  const [cleaningWeekly, setCleaningWeekly] = useState(false);
   const [smoothingMethod, setSmoothingMethod] = useState<"ma" | "hp">("ma");
   const [smoothingWindow, setSmoothingWindow] = useState(7);
   const [hpLambda, setHpLambda] = useState(1600);
@@ -221,6 +223,11 @@ export function useParameterForm({
     THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter,
   );
   const [showThresholdAdvanced, setShowThresholdAdvanced] = useState(false);
+  const [outlierZapMode, setOutlierZapMode] = useState<OutlierZapMode>("none");
+  const [manualOutliers, setManualOutliers] = useState<Record<string, string[]>>(
+    {},
+  );
+  const [outlierZapPreviewMeter, setOutlierZapPreviewMeter] = useState("");
   // Load meter groups from localStorage on mount
   useEffect(() => {
     const savedGroups = localStorage.getItem("meterGroups");
@@ -261,12 +268,25 @@ export function useParameterForm({
     setStartDate("");
     setEndDate("");
     setMeter("");
-    setCleaningMethod("");
-    setCleaningExtra({
-      cleaning_window: 12,
-      cleaning_n_sigma: 3,
-      cleaning_interval_width: 0.8,
-    });
+    if (selectedPlotType === "threshold-detection") {
+      setCleaningMethod("Polynomial");
+      setCleaningExtra({
+        cleaning_window: 12,
+        cleaning_n_sigma: 3.3,
+        cleaning_interval_width: 0.95,
+      });
+      setCleaningDaily(false);
+      setCleaningWeekly(false);
+    } else {
+      setCleaningMethod("");
+      setCleaningExtra({
+        cleaning_window: 12,
+        cleaning_n_sigma: 3,
+        cleaning_interval_width: 0.8,
+      });
+      setCleaningDaily(false);
+      setCleaningWeekly(false);
+    }
     setSmoothingMethod("ma");
     setSmoothingWindow(7);
     setHpLambda(1600);
@@ -369,7 +389,10 @@ export function useParameterForm({
     setRpcaTol(THRESHOLD_NUMERIC_DEFAULTS.rpca_tol);
     setRpcaMaxIter(THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter);
     setShowThresholdAdvanced(false);
-  }, [resetSignal, meterList?.meters, meterList?.time_range]);
+    setOutlierZapMode("none");
+    setManualOutliers({});
+    setOutlierZapPreviewMeter("");
+  }, [resetSignal, meterList?.meters, meterList?.time_range, selectedPlotType]);
 
   useEffect(() => {
     if (!initialValues) return;
@@ -377,6 +400,12 @@ export function useParameterForm({
     setEndDate(initialValues.end_date);
     setMeter(initialValues.meter);
     setCleaningMethod(initialValues.cleaning_method ?? "");
+    if (initialValues.cleaning_daily !== undefined) {
+      setCleaningDaily(initialValues.cleaning_daily);
+    }
+    if (initialValues.cleaning_weekly !== undefined) {
+      setCleaningWeekly(initialValues.cleaning_weekly);
+    }
     setCleaningExtra((prev) => ({
       ...prev,
       ...(initialValues.cleaning_window != null && { cleaning_window: initialValues.cleaning_window }),
@@ -685,6 +714,12 @@ export function useParameterForm({
     if (initialValues.rpca_max_iter !== undefined) {
       setRpcaMaxIter(initialValues.rpca_max_iter);
     }
+    if (initialValues.outlierZapMode) {
+      setOutlierZapMode(initialValues.outlierZapMode);
+    }
+    if (initialValues.manual_outliers) {
+      setManualOutliers(initialValues.manual_outliers);
+    }
   }, [initialValues]);
 
   useEffect(() => {
@@ -693,6 +728,13 @@ export function useParameterForm({
       setIncludedMeters([...allMeters]);
     }
   }, [selectedPlotType, allMeters, includedMeters.length]);
+
+  useEffect(() => {
+    if (selectedPlotType !== "threshold-detection") return;
+    if (meter && !outlierZapPreviewMeter) {
+      setOutlierZapPreviewMeter(meter);
+    }
+  }, [selectedPlotType, meter, outlierZapPreviewMeter]);
 
   useEffect(() => {
     if (selectedPlotType !== "threshold-detection") return;
@@ -828,6 +870,8 @@ export function useParameterForm({
     meter,
     cleaningMethod,
     cleaningExtra,
+    cleaningDaily,
+    cleaningWeekly,
     smoothingMethod,
     smoothingWindow,
     hpLambda,
@@ -922,6 +966,9 @@ export function useParameterForm({
     rpcaTol,
     rpcaMaxIter,
     showThresholdAdvanced,
+    outlierZapMode,
+    manualOutliers,
+    outlierZapPreviewMeter,
     meterGroups,
     editingGroupId,
     showMeterGroups,
@@ -934,6 +981,8 @@ export function useParameterForm({
     setMeter,
     setCleaningMethod,
     setCleaningExtra,
+    setCleaningDaily,
+    setCleaningWeekly,
     setSmoothingMethod,
     setSmoothingWindow,
     setHpLambda,
@@ -1028,6 +1077,9 @@ export function useParameterForm({
     setRpcaTol,
     setRpcaMaxIter,
     setShowThresholdAdvanced,
+    setOutlierZapMode,
+    setManualOutliers,
+    setOutlierZapPreviewMeter,
     setMeterGroups,
     setEditingGroupId,
     setShowMeterGroups,

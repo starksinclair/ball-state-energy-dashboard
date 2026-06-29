@@ -8,6 +8,7 @@ import { VictoryBoxPlot } from "victory-box-plot";
 import type { BaseRequest } from "../types/api";
 import { useTemperatureAnalysis } from "../services/api";
 import { AxiosError } from "axios";
+import ManualOutliersAudit from "./ManualOutliersAudit";
 
 interface TemperatureAnalysisPlotProps {
   submitParams?: BaseRequest | null;
@@ -114,6 +115,10 @@ export default function TemperatureAnalysisPlot({
 
   return (
     <div className="space-y-6">
+      <ManualOutliersAudit
+        applied={data.manual_outliers_applied}
+        skipped={data.manual_outliers_skipped}
+      />
       {data.plot_png_base64 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-semibold text-ball-state-blue mb-4">

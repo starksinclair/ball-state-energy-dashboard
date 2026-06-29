@@ -1,7 +1,8 @@
 import type { BaseRequest, PlotType } from "../../types/api";
-import { useMeterList } from "../../services/api";
+import { useMeterList, useDatasetInfo } from "../../services/api";
 import { useParameterForm } from "../../hooks/useParameterForm";
 import { buildBaseRequest } from "../../utils/parameter-form/buildBaseRequest";
+import { datasetIdFromInfo } from "../../utils/manualOutliersStorage";
 import { ParameterFormHeader } from "./ParameterFormHeader";
 import { EdaRouteSelector } from "./sections/EdaRouteSelector";
 import { EssentialParametersSection } from "./sections/EssentialParametersSection";
@@ -10,6 +11,7 @@ import { ThresholdOptionsSection } from "./sections/ThresholdOptionsSection";
 import { ForecastOptionsSection } from "./sections/ForecastOptionsSection";
 import { SmoothingOptionsSection } from "./sections/SmoothingOptionsSection";
 import { MeterGroupsSection } from "./sections/MeterGroupsSection";
+import { OutlierZapPanel } from "./OutlierZapPanel";
 
 interface ParameterFormProps {
   onSubmit: (params: BaseRequest) => void;
@@ -27,6 +29,8 @@ export default function ParameterForm({
   initialValues,
 }: ParameterFormProps) {
   const { data: meterList, isFetched: meterListFetched } = useMeterList();
+  const { data: datasetInfo } = useDatasetInfo();
+  const datasetId = datasetIdFromInfo(datasetInfo);
   const datasetReady = (meterList?.meters.length ?? 0) > 0;
   const form = useParameterForm({
     resetSignal,
@@ -42,6 +46,7 @@ export default function ParameterForm({
       selectedPlotType,
       shouldShowField: form.shouldShowField,
       meterGroups: form.meterGroups,
+      datasetId,
     });
     if (result.ok) {
       onSubmit(result.params);
@@ -80,6 +85,11 @@ export default function ParameterForm({
           </div>
 
           <EssentialParametersSection form={form} />
+          <OutlierZapPanel
+            form={form}
+            selectedPlotType={selectedPlotType}
+            datasetId={datasetId}
+          />
           <EdaOptionsSection form={form} />
           <ForecastOptionsSection form={form} />
         </div>

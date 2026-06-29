@@ -1,6 +1,7 @@
 import { toast } from "react-toastify";
 import type {
   BaseRequest,
+  CleaningMethod,
   FormField,
   KruskalWallisTestSpec,
   PlotType,
@@ -11,6 +12,10 @@ import { CLEANING_METHOD_EXTRA_FIELDS } from "../../constants/cleaningMethodExtr
 import { parseSeasonalityPeriodsText } from "./edaJsonSync";
 import { parseOptionalNumber } from "./parseOptionalNumber";
 import { sliceDateOnly } from "../../constants/thresholdDefaults";
+import {
+  mergeManualOutliersForOverage,
+  pruneOutliersOutsideRange,
+} from "../manualOutliersStorage";
 import {
   resolveProphetBoolSeasonality,
   resolveYearlySeasonality,
@@ -25,6 +30,7 @@ interface BuildBaseRequestArgs {
   selectedPlotType: PlotType;
   shouldShowField: (field: FormField) => boolean;
   meterGroups: MeterGroup[];
+  datasetId?: string;
 }
 
 export function buildBaseRequest({
@@ -32,6 +38,7 @@ export function buildBaseRequest({
   selectedPlotType,
   shouldShowField,
   meterGroups,
+  datasetId = "",
 }: BuildBaseRequestArgs): BuildResult {
   if (!state.startDate || !state.endDate) {
     toast.error("Please select both start and end dates");
@@ -50,11 +57,7 @@ export function buildBaseRequest({
   };
 
   if (shouldShowField("cleaning_method") && state.cleaningMethod) {
-    params.cleaning_method = state.cleaningMethod as
-      | "Prophet"
-      | "Hampel"
-      | "Polynomial"
-      | "None";
+    params.cleaning_method = state.cleaningMethod as CleaningMethod;
     const extraFields = CLEANING_METHOD_EXTRA_FIELDS[params.cleaning_method];
     if (extraFields?.length) {
       for (const f of extraFields) {
@@ -303,6 +306,13 @@ export function buildBaseRequest({
     params.heatmap_normalize = state.heatmapNormalize;
     params.heatmap_top_n = state.heatmapTopN;
     params.clean_all_meters = state.cleanAllMeters;
+    if (
+      state.cleaningMethod === "Prophet" ||
+      state.cleaningMethod === "Neural"
+    ) {
+      params.cleaning_daily = state.cleaningDaily;
+      params.cleaning_weekly = state.cleaningWeekly;
+    }
     if (state.thresholdMode === "rpca") {
       params.n_thresholds = state.nThresholds;
       params.rpca_tol = state.rpcaTol;
@@ -319,6 +329,33 @@ export function buildBaseRequest({
   );
   if (selectedGroup) {
     params.meters_to_add = { [selectedGroup.name]: selectedGroup.meters };
+  }
+
+  if (state.outlierZapMode !== "none") {
+    let zaps: Record<string, string[]> = { ...state.manualOutliers };
+    if (selectedPlotType === "threshold-detection" && datasetId) {
+      zaps = mergeManualOutliersForOverage(
+        state.meter,
+        state.includedMeters,
+        state.seriesMeters,
+        datasetId,
+        state.manualOutliers,
+      );
+    }
+    const { pruned, removedCount } = pruneOutliersOutsideRange(
+      zaps,
+      state.startDate,
+      state.endDate,
+    );
+    if (removedCount > 0) {
+      toast.warn(
+        `${removedCount} saved zap(s) fall outside the selected date range and were omitted.`,
+      );
+    }
+    if (Object.keys(pruned).length > 0) {
+      params.manual_outliers = pruned;
+      params.outlierZapMode = state.outlierZapMode;
+    }
   }
 
   return { ok: true, params };

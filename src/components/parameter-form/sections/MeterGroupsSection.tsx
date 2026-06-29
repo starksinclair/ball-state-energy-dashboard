@@ -49,7 +49,7 @@ export function MeterGroupsSection({ form }: MeterGroupsSectionProps) {
             <div className="space-y-4 pl-10">
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 transition-colors">
                 <p className="text-sm text-red-900 dark:text-red-300 mb-2">
-                  <strong>Create form.meter groups</strong> to sum multiple meters
+                  <strong>Create meter groups</strong> to sum multiple meters
                   together. Saved groups will appear in the Meter dropdown
                   above.
                 </p>

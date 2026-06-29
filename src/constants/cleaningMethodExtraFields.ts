@@ -1,7 +1,13 @@
 import type { BaseRequest } from "../types/api";
 
 /** Cleaning method keys that can have extra form fields. */
-export type CleaningMethodKey = "Prophet" | "Hampel" | "Polynomial" | "None";
+export type CleaningMethodKey =
+  | "Prophet"
+  | "Hampel"
+  | "Polynomial"
+  | "Neural"
+  | "Fencing"
+  | "None";
 
 /** Config for one extra input (e.g. window, n_sigma). Add more keys to BaseRequest and here to support new fields. */
 export interface CleaningExtraFieldConfig {
@@ -65,6 +71,24 @@ export const CLEANING_METHOD_EXTRA_FIELDS: Partial<
       min: 1,
       max: 10,
       default: 3,
+      hint: "Sigma multiplier",
+    },
+  ],
+  Neural: [
+    {
+      key: "cleaning_window",
+      label: "Window",
+      min: 1,
+      max: 100,
+      default: 12,
+      hint: "Window size",
+    },
+    {
+      key: "cleaning_n_sigma",
+      label: "n_sigma",
+      min: 1,
+      max: 10,
+      default: 3.3,
       hint: "Sigma multiplier",
     },
   ],

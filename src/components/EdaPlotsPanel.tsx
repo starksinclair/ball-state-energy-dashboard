@@ -10,10 +10,21 @@ import type {
   EdaKruskalWallisResult,
   EdaUnitRootTestsResponse,
   EdaUnitRootTestDetail,
+  ManualOutlierAuditFields,
 } from "../types/api";
+import ManualOutliersAudit from "./ManualOutliersAudit";
 
 interface EdaPlotsPanelProps {
   submitParams: BaseRequest | null;
+}
+
+function EdaManualOutliersAudit({ data }: { data: ManualOutlierAuditFields }) {
+  return (
+    <ManualOutliersAudit
+      applied={data.manual_outliers_applied}
+      skipped={data.manual_outliers_skipped}
+    />
+  );
 }
 
 function isTrendTestsResponse(data: unknown): data is EdaTrendTestsResponse {
@@ -429,6 +440,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
           </span>
         </div>
 
+        <EdaManualOutliersAudit data={data} />
+
         <div className="space-y-4">
           <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
             Harmonic F-tests · periods [{st.periods.join(", ")}]
@@ -476,6 +489,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
             {ut.n_points.toLocaleString()} points · regression {ut.regression}
           </span>
         </div>
+
+        <EdaManualOutliersAudit data={data} />
 
         <div className="mb-4 p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
@@ -543,6 +558,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
           </span>
         </div>
 
+        <EdaManualOutliersAudit data={data} />
+
         <div className="space-y-4">
           <TrendTestRow label="Mann-Kendall Test" result={trend_tests.mann_kendall} />
           <TrendTestRow label="Seasonal Kendall Test" result={trend_tests.seasonal_kendall} />
@@ -566,6 +583,7 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
             </span>
           )}
         </div>
+        <EdaManualOutliersAudit data={data as ManualOutlierAuditFields} />
         <img
           src={`data:image/png;base64,${plotData.plot_png_base64}`}
           alt={routeLabel}

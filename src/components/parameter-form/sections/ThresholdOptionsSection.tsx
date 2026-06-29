@@ -274,7 +274,13 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
                 onChange={(e) => form.setCleanAllMeters(e.target.checked)}
                 className="rounded border-gray-300 text-[#ba0c2f] focus:ring-[#ba0c2f]"
               />
-              Clean all meters
+              <span>
+                Clean all meters
+                <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">
+                  Cleans all selected RPCA meters, or every numeric column if
+                  none selected
+                </span>
+              </span>
             </label>
           </div>
 

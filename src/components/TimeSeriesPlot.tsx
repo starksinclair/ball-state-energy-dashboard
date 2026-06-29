@@ -13,6 +13,7 @@ import type { BaseRequest } from "../types/api";
 import { useTimeSeries } from "../services/api";
 import { AxiosError } from "axios";
 import ForecastPlot from "./ForecastPlot";
+import ManualOutliersAudit from "./ManualOutliersAudit";
 import { normalizeOutliers } from "../utils/outliers";
 
 interface TimeSeriesPlotProps {
@@ -34,7 +35,19 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
   // If modeling returned forecast_time_series, render ForecastPlot
   if ((submitParams?.forecast || submitParams?.assessment) && data?.forecast_time_series) {
-    return <ForecastPlot submitParams={submitParams} forecastData={data.forecast_time_series} timeSeriesData={data} />;
+    return (
+      <div className="space-y-6">
+        <ManualOutliersAudit
+          applied={data.manual_outliers_applied}
+          skipped={data.manual_outliers_skipped}
+        />
+        <ForecastPlot
+          submitParams={submitParams}
+          forecastData={data.forecast_time_series}
+          timeSeriesData={data}
+        />
+      </div>
+    );
   }
 
   // const totalMissing = useMemo(() => {
@@ -116,7 +129,19 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
   // If modeling returned forecast_time_series, render ForecastPlot
   if ((submitParams?.forecast || submitParams?.assessment) && data?.forecast_time_series) {
-    return <ForecastPlot submitParams={submitParams} forecastData={data.forecast_time_series} timeSeriesData={data} />;
+    return (
+      <div className="space-y-6">
+        <ManualOutliersAudit
+          applied={data.manual_outliers_applied}
+          skipped={data.manual_outliers_skipped}
+        />
+        <ForecastPlot
+          submitParams={submitParams}
+          forecastData={data.forecast_time_series}
+          timeSeriesData={data}
+        />
+      </div>
+    );
   }
 
   const assessmentComparisonData =
@@ -188,6 +213,10 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
   return (
     <div className="space-y-6">
+      <ManualOutliersAudit
+        applied={data.manual_outliers_applied}
+        skipped={data.manual_outliers_skipped}
+      />
       {/* Statistics Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-colors">

@@ -40,6 +40,8 @@ export interface ParameterFormBindings extends ParameterFormState {
   setMeter: Setter<string>;
   setCleaningMethod: Setter<string>;
   setCleaningExtra: Setter<Record<string, number>>;
+  setCleaningDaily: Setter<boolean>;
+  setCleaningWeekly: Setter<boolean>;
   setSmoothingMethod: Setter<"ma" | "hp">;
   setSmoothingWindow: Setter<number>;
   setHpLambda: Setter<number>;
@@ -144,6 +146,9 @@ export interface ParameterFormBindings extends ParameterFormState {
   setRpcaTol: Setter<number>;
   setRpcaMaxIter: Setter<number>;
   setShowThresholdAdvanced: Setter<boolean>;
+  setOutlierZapMode: Setter<import("../../types/api").OutlierZapMode>;
+  setManualOutliers: Setter<Record<string, string[]>>;
+  setOutlierZapPreviewMeter: Setter<string>;
   setMeterGroups: Setter<MeterGroup[]>;
   setEditingGroupId: Setter<string | null>;
   setShowMeterGroups: Setter<boolean>;

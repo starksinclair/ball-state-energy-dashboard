@@ -10,6 +10,7 @@ export const EMPTY_DATASET_INFO: DatasetInfoResponse = {
   meters: [],
   time_range: { start: "", end: "" },
   holiday_keys: [],
+  meter_count: 0,
 };
 
 export function isMeterListResponse(data: unknown): data is MeterListResponse {

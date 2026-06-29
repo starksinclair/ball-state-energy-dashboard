@@ -1,4 +1,4 @@
-import type { EdaRoute } from "./api";
+import type { EdaRoute, OutlierZapMode } from "./api";
 import type {
   NpFeatureLagsUi,
   NpYearlySeasonalityUi,
@@ -17,6 +17,8 @@ export interface ParameterFormState {
   meter: string;
   cleaningMethod: string;
   cleaningExtra: Record<string, number>;
+  cleaningDaily: boolean;
+  cleaningWeekly: boolean;
   smoothingMethod: "ma" | "hp";
   smoothingWindow: number;
   hpLambda: number;
@@ -111,5 +113,8 @@ export interface ParameterFormState {
   rpcaTol: number;
   rpcaMaxIter: number;
   showThresholdAdvanced: boolean;
+  outlierZapMode: OutlierZapMode;
+  manualOutliers: Record<string, string[]>;
+  outlierZapPreviewMeter: string;
 }
 

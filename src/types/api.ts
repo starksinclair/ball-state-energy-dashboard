@@ -66,19 +66,99 @@ export interface ChartDataPoint {
   label?: string;
 }
 
+export type CleaningMethod =
+  | "Prophet"
+  | "Hampel"
+  | "Polynomial"
+  | "Neural"
+  | "Fencing"
+  | "None";
+
+export type OutlierZapMode = "none" | "this_tab" | "from_storage";
+
+export interface ManualOutlierApplied {
+  meter: string;
+  datetime: string;
+  value_before: number;
+  value_after: number;
+  source: "manual";
+}
+
+export interface ManualOutlierSkipped {
+  meter: string;
+  datetime: string;
+  reason: string;
+}
+
+export interface ManualOutlierAuditFields {
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
+}
+
+export interface OutlierPreviewSeriesPoint {
+  datetime: string;
+  value: number;
+}
+
+export interface OutlierPreviewStats {
+  min: number;
+  max: number;
+  p99: number;
+  count: number;
+}
+
+export interface OutlierPreviewRequest {
+  start_date: string;
+  end_date: string;
+  meter: string;
+  meters_to_add?: Record<string, string[]>;
+  manual_outliers?: Record<string, string[]>;
+  cleaning_method?: CleaningMethod | null;
+  cleaning_window?: number;
+  cleaning_n_sigma?: number;
+  cleaning_interval_width?: number;
+  cleaning_max?: number;
+  cleaning_min?: number;
+  cleaning_order?: number;
+  cleaning_daily?: boolean;
+  cleaning_weekly?: boolean;
+  cleaning_imputem?: boolean;
+  include_cleaned_preview?: boolean;
+}
+
+export interface OutlierPreviewResponse {
+  success: boolean;
+  meter: string;
+  date_range: TimeSeriesDateRange & { row_count?: number };
+  series: OutlierPreviewSeriesPoint[];
+  stats: OutlierPreviewStats;
+  manual_outliers_requested: string[];
+  manual_outliers_applied: ManualOutlierApplied[];
+  manual_outliers_skipped: ManualOutlierSkipped[];
+  auto_outliers: unknown[];
+  cleaned_preview?: OutlierPreviewSeriesPoint[];
+}
+
 export interface BaseRequest {
   start_date: string;
   end_date: string;
   meter: string;
   smoothing_method?: "ma" | "hp";
   smoothing_window?: number;
-  cleaning_method?: "Prophet" | "Hampel" | "Polynomial" | "None";
+  cleaning_method?: CleaningMethod;
   /** Used by Hampel and Polynomial cleaning. Default 12. */
   cleaning_window?: number;
   /** Used by Hampel and Polynomial cleaning. Default 3. */
   cleaning_n_sigma?: number;
   /** Used by Prophet cleaning method. Range: 0 to 1. */
   cleaning_interval_width?: number;
+  /** Overage / per-meter cleaning. Default false. */
+  cleaning_daily?: boolean;
+  cleaning_weekly?: boolean;
+  cleaning_imputem?: boolean;
+  cleaning_max?: number;
+  cleaning_min?: number;
+  cleaning_order?: number;
   meters_to_add?: Record<string, string[]>; // e.g., {'totalfoundation':['FOUNDATIONAL_SCIENCE-FBPM7','FOUNDATIONAL_SCIENCE-FBPM17']}
   forecast?: boolean;
   assessment?: boolean;
@@ -184,6 +264,8 @@ export interface BaseRequest {
   threshold_max?: number;
   rpca_tol?: number;
   rpca_max_iter?: number;
+  manual_outliers?: Record<string, string[]>;
+  outlierZapMode?: OutlierZapMode;
 }
 
 /** Chatbot: provider-agnostic messages to/from backend `/api/chat`. */
@@ -266,6 +348,8 @@ export interface TimeSeriesResponse {
   assessment?: AssessmentMetrics;
   assessment_plot_png_base64?: string;
   forecast_plot_png_base64?: string;
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
 export interface MissingCounts {
@@ -287,6 +371,8 @@ export interface SeasonalAnalysisResponse {
   date_range: TimeSeriesDateRange;
   boxplot_data: SeasonalAnalysisData[];
   plot_png_base64?: string;
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
 export interface TemperatureAnalysisResponse {
@@ -295,6 +381,8 @@ export interface TemperatureAnalysisResponse {
   date_range: TimeSeriesDateRange;
   boxplot_data: TemperatureAnalysisData[];
   plot_png_base64?: string;
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 // EDA Routes
 export type EdaRoute =
@@ -335,6 +423,8 @@ export interface EdaTrendTestsResponse {
     seasonal_periods: number;
     n_points: number;
   };
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
 export interface EdaPlotResponse {
@@ -389,6 +479,8 @@ export interface EdaSeasonalityTestsResponse {
   meter: string;
   date_range?: { start: string; end: string };
   seasonality_tests: EdaSeasonalityTestsPayload;
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
 export interface EdaUnitRootTestDetail {
@@ -427,6 +519,8 @@ export interface EdaUnitRootTestsResponse {
   date_range?: { start: string; end: string };
   count?: Record<string, unknown>;
   unit_root_tests: EdaUnitRootTestsPayload;
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
 export type EdaResponse =
@@ -508,6 +602,8 @@ export interface OverageThresholdResponse {
   series_plot_png_base64: string;
   threshold_optimization?: ThresholdOptimization;
   threshold_sweep_plot_png_base64?: string;
+  manual_outliers_applied?: ManualOutlierApplied[];
+  manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
 // Plot Types
@@ -543,9 +639,21 @@ export interface MeterListResponse {
 
 export interface DatasetInfoResponse {
   success?: boolean;
+  csv_path?: string;
   meters: string[];
   time_range: Pick<TimeSeriesDateRange, "start" | "end">;
   holiday_keys: string[];
+  meter_count?: number;
+}
+
+export interface StoredManualOutliers {
+  version: 1;
+  savedAt: string;
+  savedFromTab: PlotType;
+  startDate: string;
+  endDate: string;
+  cleaningMethod: string | null;
+  manual_outliers: Record<string, string[]>;
 }
 
 export interface DatasetUploadUrlsResponse {

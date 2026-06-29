@@ -2,6 +2,8 @@ import {
   CLEANING_METHOD_EXTRA_FIELDS,
   type CleaningMethodKey,
 } from "../../../constants/cleaningMethodExtraFields";
+import { cleaningMethodOptionsForPlot } from "../../../constants/cleaningMethods";
+import type { CleaningMethod } from "../../../types/api";
 import type { ParameterFormBindings } from "../types";
 
 interface EssentialParametersSectionProps {
@@ -142,29 +144,62 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                 >
                   Data Cleaning Method
                   <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                    Optional: Remove outliers and anomalies
+                    {form.selectedPlotType === "threshold-detection"
+                      ? "Polynomial recommended for multi-meter overage"
+                      : "Optional: Remove outliers and anomalies"}
                   </span>
                 </label>
+                {form.selectedPlotType === "threshold-detection" && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Each method runs per meter. Prophet fits one model per meter
+                    and is slow at scale.
+                  </p>
+                )}
                 <select
                   id="cleaningMethod"
                   value={form.cleaningMethod}
                   onChange={(e) =>
-                    form.setCleaningMethod(
-                      e.target.value as
-                        | "Prophet"
-                        | "Hampel"
-                        | "Polynomial"
-                        | "None"
-                    )
+                    form.setCleaningMethod(e.target.value as CleaningMethod | "")
                   }
                   className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all"
                 >
-                  <option value="">None (No cleaning)</option>
-                  <option value="Prophet">Prophet (Facebook Prophet)</option>
-                  <option value="Hampel">Hampel Filter</option>
-                  <option value="Polynomial">Polynomial Regression</option>
+                  {cleaningMethodOptionsForPlot(form.selectedPlotType).map(
+                    (opt) => (
+                      <option key={opt.value || "none"} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
+              {form.selectedPlotType === "threshold-detection" &&
+                (form.cleaningMethod === "Prophet" ||
+                  form.cleaningMethod === "Neural") && (
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={form.cleaningDaily}
+                        onChange={(e) =>
+                          form.setCleaningDaily(e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-[#ba0c2f] focus:ring-[#ba0c2f]"
+                      />
+                      Daily seasonality
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={form.cleaningWeekly}
+                        onChange={(e) =>
+                          form.setCleaningWeekly(e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-[#ba0c2f] focus:ring-[#ba0c2f]"
+                      />
+                      Weekly seasonality
+                    </label>
+                  </div>
+                )}
               {/* Extra fields per cleaning method (modular: add entries to CLEANING_METHOD_EXTRA_FIELDS) */}
               {form.cleaningMethod &&
                 form.cleaningMethod !== "None" &&

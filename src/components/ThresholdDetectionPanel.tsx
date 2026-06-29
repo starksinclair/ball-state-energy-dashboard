@@ -1,5 +1,6 @@
 import { useOverageThreshold } from "../services/api";
 import type { BaseRequest } from "../types/api";
+import ManualOutliersAudit from "./ManualOutliersAudit";
 
 interface ThresholdDetectionPanelProps {
   submitParams: BaseRequest | null;
@@ -144,6 +145,11 @@ export default function ThresholdDetectionPanel({
           {data.threshold.toLocaleString()}
         </span>
       </div>
+
+      <ManualOutliersAudit
+        applied={data.manual_outliers_applied}
+        skipped={data.manual_outliers_skipped}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <SummaryCard label="Overage hours" value={summary.overage_hours} />

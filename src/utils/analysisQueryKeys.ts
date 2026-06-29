@@ -1,4 +1,5 @@
-import type { BaseRequest, PlotType } from "../types/api";
+import type { BaseRequest, OutlierPreviewRequest, PlotType } from "../types/api";
+import { manualOutliersKeyPart } from "./apiManualOutliers";
 
 export function timeSeriesQueryKey(request: BaseRequest) {
   return [
@@ -55,6 +56,8 @@ export function timeSeriesQueryKey(request: BaseRequest) {
     request.batch_size,
     request.newer_samples_weight,
     request.features,
+    manualOutliersKeyPart(request),
+    request.outlierZapMode,
   ] as const;
 }
 
@@ -69,6 +72,14 @@ export function seasonalAnalysisQueryKey(
     | "cleaning_window"
     | "cleaning_n_sigma"
     | "cleaning_interval_width"
+    | "cleaning_max"
+    | "cleaning_min"
+    | "cleaning_order"
+    | "cleaning_daily"
+    | "cleaning_weekly"
+    | "cleaning_imputem"
+    | "manual_outliers"
+    | "outlierZapMode"
   >,
 ) {
   return [
@@ -81,6 +92,14 @@ export function seasonalAnalysisQueryKey(
     request.cleaning_window,
     request.cleaning_n_sigma,
     request.cleaning_interval_width,
+    request.cleaning_max,
+    request.cleaning_min,
+    request.cleaning_order,
+    request.cleaning_daily,
+    request.cleaning_weekly,
+    request.cleaning_imputem,
+    manualOutliersKeyPart(request),
+    request.outlierZapMode,
   ] as const;
 }
 
@@ -95,6 +114,14 @@ export function temperatureAnalysisQueryKey(
     | "cleaning_window"
     | "cleaning_n_sigma"
     | "cleaning_interval_width"
+    | "cleaning_max"
+    | "cleaning_min"
+    | "cleaning_order"
+    | "cleaning_daily"
+    | "cleaning_weekly"
+    | "cleaning_imputem"
+    | "manual_outliers"
+    | "outlierZapMode"
   >,
 ) {
   return [
@@ -107,6 +134,14 @@ export function temperatureAnalysisQueryKey(
     request.cleaning_window,
     request.cleaning_n_sigma,
     request.cleaning_interval_width,
+    request.cleaning_max,
+    request.cleaning_min,
+    request.cleaning_order,
+    request.cleaning_daily,
+    request.cleaning_weekly,
+    request.cleaning_imputem,
+    manualOutliersKeyPart(request),
+    request.outlierZapMode,
   ] as const;
 }
 
@@ -136,6 +171,8 @@ export function edaPlotQueryKey(request: BaseRequest) {
     request.smoothing_method,
     request.smoothing_window,
     request.annotated,
+    manualOutliersKeyPart(request),
+    request.outlierZapMode,
   ] as const;
 }
 
@@ -150,6 +187,12 @@ export function overageThresholdQueryKey(request: BaseRequest) {
     request.cleaning_window,
     request.cleaning_n_sigma,
     request.cleaning_interval_width,
+    request.cleaning_daily,
+    request.cleaning_weekly,
+    request.cleaning_imputem,
+    request.cleaning_max,
+    request.cleaning_min,
+    request.cleaning_order,
     request.threshold_mode,
     request.threshold,
     request.meters,
@@ -171,6 +214,30 @@ export function overageThresholdQueryKey(request: BaseRequest) {
     request.threshold_max,
     request.rpca_tol,
     request.rpca_max_iter,
+    manualOutliersKeyPart(request),
+    request.outlierZapMode,
+  ] as const;
+}
+
+export function outlierPreviewQueryKey(request: OutlierPreviewRequest) {
+  return [
+    "outlier-preview",
+    request.start_date,
+    request.end_date,
+    request.meter,
+    request.meters_to_add,
+    request.manual_outliers,
+    request.cleaning_method,
+    request.cleaning_window,
+    request.cleaning_n_sigma,
+    request.cleaning_interval_width,
+    request.cleaning_max,
+    request.cleaning_min,
+    request.cleaning_order,
+    request.cleaning_daily,
+    request.cleaning_weekly,
+    request.cleaning_imputem,
+    request.include_cleaned_preview,
   ] as const;
 }
 

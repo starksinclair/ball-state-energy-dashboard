@@ -18,6 +18,8 @@ import type {
   ChatResponse,
   EdaResponse,
   OverageThresholdResponse,
+  OutlierPreviewRequest,
+  OutlierPreviewResponse,
 } from "../types/api";
 import axios from "axios";
 import {
@@ -31,11 +33,17 @@ import type { DatasetUploadPhase, PlotType } from "../types/api";
 import {
   analysisQueryKey,
   edaPlotQueryKey,
+  outlierPreviewQueryKey,
   overageThresholdQueryKey,
   seasonalAnalysisQueryKey,
   temperatureAnalysisQueryKey,
   timeSeriesQueryKey,
 } from "../utils/analysisQueryKeys";
+import {
+  appendManualOutliersToBody,
+  buildSeasonalTemperatureBody,
+  type SeasonalTemperatureRequestFields,
+} from "../utils/apiManualOutliers";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://0.0.0.0:8000";
 const API_URL = `${API_BASE}/api`;
@@ -102,6 +110,10 @@ export const useTimeSeries = (
         // Send as JSON string for complex object
         params.meters_to_add = request.meters_to_add;
       }
+      appendManualOutliersToBody(
+        params as unknown as Record<string, unknown>,
+        request,
+      );
       if (request.forecast || request.assessment) {
         params.forecast = request.forecast;
         params.assessment = request.assessment;
@@ -244,36 +256,16 @@ export const useTimeSeries = (
 };
 
 export const useSeasonalAnalysis = (
-  request: Pick<
-    BaseRequest,
-    | "start_date"
-    | "end_date"
-    | "meter"
-    | "meters_to_add"
-    | "cleaning_method"
-    | "cleaning_window"
-    | "cleaning_n_sigma"
-    | "cleaning_interval_width"
-  >,
+  request: SeasonalTemperatureRequestFields,
   options?: { enabled?: boolean },
 ) => {
   return useQuery({
     queryKey: seasonalAnalysisQueryKey(request),
     queryFn: async () => {
-      const response = await axios.get<SeasonalAnalysisResponse>(
+      const body = buildSeasonalTemperatureBody(request);
+      const response = await axios.post<SeasonalAnalysisResponse>(
         `${API_URL}/seasonal-analysis`,
-        {
-          params: {
-            start_date: request.start_date,
-            end_date: request.end_date,
-            meter: request.meter,
-            meters_to_add: request.meters_to_add,
-            cleaning_method: request.cleaning_method,
-            cleaning_window: request.cleaning_window,
-            cleaning_n_sigma: request.cleaning_n_sigma,
-            cleaning_interval_width: request.cleaning_interval_width,
-          },
-        },
+        body,
       );
       return response.data;
     },
@@ -328,36 +320,16 @@ export function useDatasetUpload() {
 }
 
 export const useTemperatureAnalysis = (
-  request: Pick<
-    BaseRequest,
-    | "start_date"
-    | "end_date"
-    | "meter"
-    | "meters_to_add"
-    | "cleaning_method"
-    | "cleaning_window"
-    | "cleaning_n_sigma"
-    | "cleaning_interval_width"
-  >,
+  request: SeasonalTemperatureRequestFields,
   options?: { enabled?: boolean },
 ) => {
   return useQuery({
     queryKey: temperatureAnalysisQueryKey(request),
     queryFn: async () => {
-      const response = await axios.get<TemperatureAnalysisResponse>(
+      const body = buildSeasonalTemperatureBody(request);
+      const response = await axios.post<TemperatureAnalysisResponse>(
         `${API_URL}/temperature-analysis`,
-        {
-          params: {
-            start_date: request.start_date,
-            end_date: request.end_date,
-            meter: request.meter,
-            meters_to_add: request.meters_to_add,
-            cleaning_method: request.cleaning_method,
-            cleaning_window: request.cleaning_window,
-            cleaning_n_sigma: request.cleaning_n_sigma,
-            cleaning_interval_width: request.cleaning_interval_width,
-          },
-        },
+        body,
       );
       return response.data;
     },
@@ -507,6 +479,8 @@ export const useEdaPlot = (
         body.annotated = request.annotated ?? true;
       }
 
+      appendManualOutliersToBody(body, request);
+
       const response = await axios.post<EdaResponse>(
         `${API_URL}/eda/${request.eda_route}`,
         body,
@@ -593,6 +567,24 @@ export const useOverageThreshold = (
       if (request.cleaning_interval_width !== undefined) {
         body.cleaning_interval_width = request.cleaning_interval_width;
       }
+      if (request.cleaning_daily !== undefined) {
+        body.cleaning_daily = request.cleaning_daily;
+      }
+      if (request.cleaning_weekly !== undefined) {
+        body.cleaning_weekly = request.cleaning_weekly;
+      }
+      if (request.cleaning_imputem !== undefined) {
+        body.cleaning_imputem = request.cleaning_imputem;
+      }
+      if (request.cleaning_max !== undefined) {
+        body.cleaning_max = request.cleaning_max;
+      }
+      if (request.cleaning_min !== undefined) {
+        body.cleaning_min = request.cleaning_min;
+      }
+      if (request.cleaning_order !== undefined) {
+        body.cleaning_order = request.cleaning_order;
+      }
       if (request.n_thresholds !== undefined) {
         body.n_thresholds = request.n_thresholds;
       }
@@ -609,6 +601,8 @@ export const useOverageThreshold = (
         body.rpca_max_iter = request.rpca_max_iter;
       }
 
+      appendManualOutliersToBody(body, request);
+
       const response = await axios.post<OverageThresholdResponse>(
         `${API_URL}/overage/threshold-optimization`,
         body,
@@ -617,6 +611,28 @@ export const useOverageThreshold = (
     },
     enabled: !!request && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 60 * 24,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useOutlierPreview = (
+  request: OutlierPreviewRequest | null,
+  options?: { enabled?: boolean },
+) => {
+  return useQuery({
+    queryKey: request
+      ? outlierPreviewQueryKey(request)
+      : ["outlier-preview", "disabled"],
+    queryFn: async () => {
+      if (!request) throw new Error("No preview request");
+      const response = await axios.post<OutlierPreviewResponse>(
+        `${API_URL}/cleaning/outlier-preview`,
+        request,
+      );
+      return response.data;
+    },
+    enabled: !!request && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,
   });
 };
