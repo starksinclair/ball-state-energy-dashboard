@@ -8,15 +8,21 @@ import { sendChatMessage } from "../services/api";
 
 type UiMessage = ChatMessage & { id: string };
 
-/** Markdown for assistant/system bubbles (red background, light text). */
+/** Markdown tuned for assistant bubbles on a light/neutral background. */
 const assistantMarkdownComponents: Components = {
   p: ({ children }) => (
-    <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>
+    <p className="mb-2 last:mb-0 leading-relaxed text-gray-700 dark:text-gray-200">
+      {children}
+    </p>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-white">{children}</strong>
+    <strong className="font-semibold text-gray-900 dark:text-white">
+      {children}
+    </strong>
   ),
-  em: ({ children }) => <em className="italic text-red-100">{children}</em>,
+  em: ({ children }) => (
+    <em className="italic text-gray-600 dark:text-gray-300">{children}</em>
+  ),
   code: ({ className, children, ...props }) => {
     const isBlock = Boolean(className);
     if (isBlock) {
@@ -28,7 +34,7 @@ const assistantMarkdownComponents: Components = {
     }
     return (
       <code
-        className="rounded bg-black/25 px-1 py-0.5 text-[0.85em] font-mono"
+        className="rounded bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 text-[0.85em] font-mono text-gray-800 dark:text-gray-100"
         {...props}
       >
         {children}
@@ -36,61 +42,110 @@ const assistantMarkdownComponents: Components = {
     );
   },
   pre: ({ children }) => (
-    <pre className="my-1 max-w-full overflow-x-auto rounded-md bg-black/30 p-2 text-xs leading-snug text-red-50">
+    <pre className="my-2 max-w-full overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-900 p-3 text-xs leading-relaxed text-gray-800 dark:text-gray-100">
       {children}
     </pre>
   ),
   ul: ({ children }) => (
-    <ul className="my-1 list-disc space-y-0.5 pl-4 text-sm">{children}</ul>
+    <ul className="my-2 list-disc space-y-1.5 pl-5 text-sm text-gray-700 dark:text-gray-200">
+      {children}
+    </ul>
   ),
   ol: ({ children }) => (
-    <ol className="my-1 list-decimal space-y-0.5 pl-4 text-sm">{children}</ol>
+    <ol className="my-2 list-decimal space-y-1.5 pl-5 text-sm text-gray-700 dark:text-gray-200">
+      {children}
+    </ol>
   ),
-  li: ({ children }) => <li className="leading-snug">{children}</li>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
   a: ({ href, children }) => (
     <a
       href={href}
       target="_blank"
       rel="noreferrer noopener"
-      className="break-all text-red-100 underline underline-offset-2 hover:text-white"
+      className="break-all text-[#ba0c2f] dark:text-red-300 underline underline-offset-2 hover:text-[#9a0a26] dark:hover:text-red-200"
     >
       {children}
     </a>
   ),
   h1: ({ children }) => (
-    <h1 className="mb-1 text-base font-semibold">{children}</h1>
+    <h1 className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+      {children}
+    </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mb-1 text-sm font-semibold">{children}</h2>
+    <h2 className="mb-1.5 mt-3 first:mt-0 text-sm font-semibold text-gray-900 dark:text-white">
+      {children}
+    </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mb-1 text-sm font-medium">{children}</h3>
+    <h3 className="mb-1 mt-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+      {children}
+    </h3>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-1 border-l-2 border-white/40 pl-2 text-sm italic text-red-100">
+    <blockquote className="my-2 border-l-2 border-[#ba0c2f]/40 pl-3 text-sm italic text-gray-600 dark:text-gray-300">
       {children}
     </blockquote>
   ),
-  hr: () => <hr className="my-2 border-white/30" />,
+  hr: () => <hr className="my-3 border-gray-200 dark:border-gray-600" />,
   table: ({ children }) => (
-    <div className="my-1 max-w-full overflow-x-auto">
-      <table className="w-full min-w-[200px] border-collapse border border-white/25 text-xs">
+    <div className="my-2 max-w-full overflow-x-auto">
+      <table className="w-full min-w-[200px] border-collapse border border-gray-200 dark:border-gray-600 text-xs">
         {children}
       </table>
     </div>
   ),
-  thead: ({ children }) => <thead className="bg-black/20">{children}</thead>,
+  thead: ({ children }) => (
+    <thead className="bg-gray-100 dark:bg-gray-900">{children}</thead>
+  ),
   th: ({ children }) => (
-    <th className="border border-white/25 px-1.5 py-1 text-left font-medium">
+    <th className="border border-gray-200 dark:border-gray-600 px-2 py-1.5 text-left font-medium text-gray-900 dark:text-gray-100">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="border border-white/25 px-1.5 py-1">{children}</td>
+    <td className="border border-gray-200 dark:border-gray-600 px-2 py-1.5 text-gray-700 dark:text-gray-200">
+      {children}
+    </td>
   ),
 };
 
 const MAX_TEXTAREA_ROWS = 10;
+
+const SUGGESTED_PROMPTS = [
+  "How many meters are in the dataset?",
+  "Were there campus overage events at 22,000 kW?",
+  "Did Arts & Journalism cause the August overage?",
+  "Is Foundational Science Building usage increasing?",
+] as const;
+
+const WELCOME_MESSAGE = `Hi! I'm the **Energy Assistant** — I answer questions about Ball State energy data using live meter tools.
+
+**What I can do**
+- Find meters and dataset date ranges
+- Summarize usage and trend direction
+- Analyze campus overage events and contributors
+- Explain seasonal and temperature patterns
+- Flag suspicious spikes (I'll ask before removing any)
+
+**Tip:** Use the dashboard tabs for charts and PNG plots. I'll focus on clear summaries here.`;
+
+function TypingIndicator() {
+  return (
+    <div
+      className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+      aria-live="polite"
+      aria-label="Assistant is thinking"
+    >
+      <span className="inline-flex gap-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-3 py-2 shadow-sm">
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:150ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:300ms]" />
+      </span>
+      <span>Thinking…</span>
+    </div>
+  );
+}
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -99,8 +154,7 @@ export default function ChatbotWidget() {
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Hi! Ask about only meters for now.",
+      content: WELCOME_MESSAGE,
     },
   ]);
   const [input, setInput] = useState("");
@@ -109,6 +163,8 @@ export default function ChatbotWidget() {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const hasUserMessages = messages.some((m) => m.role === "user");
 
   const adjustTextareaHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -137,10 +193,10 @@ export default function ChatbotWidget() {
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isSending, error]);
 
-  const handleSend = async () => {
-    const trimmed = input.trim();
+  const handleSend = async (text?: string) => {
+    const trimmed = (text ?? input).trim();
     if (!trimmed || isSending) return;
 
     const userMsg: UiMessage = {
@@ -189,25 +245,32 @@ export default function ChatbotWidget() {
     setIsExpanded(false);
   };
 
+  const panelWidth = isExpanded
+    ? "fixed inset-0 z-[60]"
+    : "fixed bottom-[calc(3.25rem+0.75rem)] right-6 z-50 w-[min(100%,420px)] max-w-[calc(100vw-1.5rem)] h-[min(640px,calc(100vh-6rem))]";
+
   return (
     <>
       {isOpen && (
         <div
-          className={
-            isExpanded
-              ? "fixed inset-0 z-[60] bg-white dark:bg-gray-800 flex flex-col overflow-hidden transition-colors"
-              : "fixed bottom-[calc(3.25rem+0.75rem)] right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] h-[520px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-colors"
-          }
+          className={`${panelWidth} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-colors ${
+            isExpanded ? "rounded-none border-0" : ""
+          }`}
         >
           <div className="px-4 py-3 bg-[#ba0c2f] text-white flex items-center justify-between shrink-0">
             <div>
-              <h3 className="text-sm font-semibold">Energy Assistant</h3>
+              <h3 className="text-sm font-semibold tracking-tight">
+                Energy Assistant
+              </h3>
+              <p className="text-xs text-red-100/90 mt-0.5">
+                Meters, usage, overage & trends
+              </p>
             </div>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setIsExpanded((prev) => !prev)}
-                className="p-1 rounded hover:bg-white/20 transition-colors"
+                className="p-1.5 rounded-md hover:bg-white/20 transition-colors"
                 aria-label={
                   isExpanded ? "Exit full screen" : "Expand to full screen"
                 }
@@ -245,7 +308,7 @@ export default function ChatbotWidget() {
               <button
                 type="button"
                 onClick={handleClose}
-                className="p-1 rounded hover:bg-white/20 transition-colors"
+                className="p-1.5 rounded-md hover:bg-white/20 transition-colors"
                 aria-label="Close chat window"
               >
                 <svg
@@ -267,63 +330,110 @@ export default function ChatbotWidget() {
 
           <div
             ref={scrollRef}
-            className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/40 transition-colors"
+            className="flex-1 min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900/50 transition-colors"
           >
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={
-                  m.role === "user"
-                    ? "max-w-[85%] ml-auto rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 transition-colors whitespace-pre-wrap wrap-break-word"
-                    : "max-w-[85%] rounded-lg px-3 py-2 text-sm bg-[#ba0c2f] text-white wrap-break-word [&_a]:text-inherit"
-                }
-              >
-                {m.role === "user" ? (
-                  m.content
-                ) : (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={assistantMarkdownComponents}
+            <div
+              className={`p-4 space-y-4 ${isExpanded ? "max-w-3xl mx-auto w-full" : ""}`}
+            >
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`flex flex-col gap-1 ${m.role === "user" ? "items-end" : "items-start"}`}
+                >
+                  <span
+                    className={`text-[10px] font-medium uppercase tracking-wider px-1 ${
+                      m.role === "user"
+                        ? "text-gray-400 dark:text-gray-500"
+                        : "text-[#ba0c2f]/80 dark:text-red-300/80"
+                    }`}
                   >
-                    {m.content}
-                  </ReactMarkdown>
-                )}
-              </div>
-            ))}
-            {isSending && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Thinking…
-              </div>
-            )}
-            {error && (
-              <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs text-red-800 dark:text-red-200">
-                {error}
-              </div>
-            )}
+                    {m.role === "user" ? "You" : "Assistant"}
+                  </span>
+                  <div
+                    className={
+                      m.role === "user"
+                        ? "max-w-[min(92%,36rem)] rounded-2xl rounded-tr-md px-4 py-2.5 text-sm leading-relaxed bg-[#ba0c2f] text-white shadow-sm whitespace-pre-wrap wrap-break-word"
+                        : "max-w-[min(92%,36rem)] rounded-2xl rounded-tl-md px-4 py-3 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 shadow-sm wrap-break-word"
+                    }
+                  >
+                    {m.role === "user" ? (
+                      m.content
+                    ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={assistantMarkdownComponents}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {!hasUserMessages && !isSending && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+                    Try a question
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTED_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => setInput(prompt)}
+                        className="text-left text-xs leading-snug px-3 py-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-[#ba0c2f]/50 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {isSending && <TypingIndicator />}
+
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-200"
+                >
+                  <p className="font-medium mb-0.5">Something went wrong</p>
+                  <p className="text-xs leading-relaxed opacity-90">{error}</p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 transition-colors">
-            <div className="flex gap-2 items-end">
-              <textarea
-                ref={textareaRef}
-                placeholder="Type a message…"
-                value={input}
-                rows={1}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void handleSend();
-                  }
-                }}
-                disabled={isSending}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60 resize-none leading-5 overflow-hidden"
-              />
+            <div
+              className={`flex gap-2 items-end ${isExpanded ? "max-w-3xl mx-auto w-full" : ""}`}
+            >
+              <div className="flex-1 min-w-0">
+                <textarea
+                  ref={textareaRef}
+                  placeholder="Ask about meters, usage, or overage…"
+                  value={input}
+                  rows={1}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  disabled={isSending}
+                  aria-label="Message"
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-60 resize-none leading-5 overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#ba0c2f]/30 focus:border-[#ba0c2f]/50"
+                />
+                <p className="mt-1.5 text-[10px] text-gray-400 dark:text-gray-500 px-1">
+                  Enter to send · Shift+Enter for new line
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => void handleSend()}
                 disabled={isSending || !input.trim()}
-                className="px-4 py-2 text-sm font-medium rounded-lg bg-[#ba0c2f] text-white hover:bg-[#9a0a26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="shrink-0 px-4 py-2.5 text-sm font-medium rounded-xl bg-[#ba0c2f] text-white hover:bg-[#9a0a26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Send
               </button>
