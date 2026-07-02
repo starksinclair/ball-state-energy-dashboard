@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { AxiosError } from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -90,8 +90,11 @@ const assistantMarkdownComponents: Components = {
   ),
 };
 
+const MAX_TEXTAREA_ROWS = 10;
+
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       id: "welcome",
@@ -105,6 +108,28 @@ export default function ChatbotWidget() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    const style = getComputedStyle(el);
+    const lineHeight = parseFloat(style.lineHeight) || 20;
+    const padding =
+      parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const border =
+      parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    const maxHeight = lineHeight * MAX_TEXTAREA_ROWS + padding + border;
+    const next = Math.min(el.scrollHeight, maxHeight);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    adjustTextareaHeight();
+  }, [input, isOpen, adjustTextareaHeight]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -159,37 +184,85 @@ export default function ChatbotWidget() {
     }
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    setIsExpanded(false);
+  };
+
   return (
-    <div className="fixed bottom-13 right-6 z-50">
+    <>
       {isOpen && (
-        <div className="w-[360px] max-w-[calc(100vw-3rem)] h-[520px] mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-colors">
+        <div
+          className={
+            isExpanded
+              ? "fixed inset-0 z-[60] bg-white dark:bg-gray-800 flex flex-col overflow-hidden transition-colors"
+              : "fixed bottom-[calc(3.25rem+0.75rem)] right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] h-[520px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-colors"
+          }
+        >
           <div className="px-4 py-3 bg-[#ba0c2f] text-white flex items-center justify-between shrink-0">
             <div>
               <h3 className="text-sm font-semibold">Energy Assistant</h3>
-              <p className="text-xs text-red-100">
-                Backend: Ollama + MCP
-              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="p-1 rounded hover:bg-white/20 transition-colors"
-              aria-label="Close chat window"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                className="p-1 rounded hover:bg-white/20 transition-colors"
+                aria-label={
+                  isExpanded ? "Exit full screen" : "Expand to full screen"
+                }
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                {isExpanded ? (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                    />
+                  </svg>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-1 rounded hover:bg-white/20 transition-colors"
+                aria-label="Close chat window"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div
@@ -230,11 +303,12 @@ export default function ChatbotWidget() {
           </div>
 
           <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 transition-colors">
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <div className="flex gap-2 items-end">
+              <textarea
+                ref={textareaRef}
                 placeholder="Type a message…"
                 value={input}
+                rows={1}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -243,7 +317,7 @@ export default function ChatbotWidget() {
                   }
                 }}
                 disabled={isSending}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60 resize-none leading-5 overflow-hidden"
               />
               <button
                 type="button"
@@ -258,26 +332,28 @@ export default function ChatbotWidget() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="w-14 h-14 rounded-full bg-[#ba0c2f] hover:bg-[#9a0a26] text-white shadow-lg flex items-center justify-center transition-colors"
-        aria-label={isOpen ? "Hide chatbot" : "Open chatbot"}
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      {(!isOpen || !isExpanded) && (
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="fixed bottom-13 right-6 z-[70] w-14 h-14 rounded-full bg-[#ba0c2f] hover:bg-[#9a0a26] text-white shadow-lg flex items-center justify-center transition-colors"
+          aria-label={isOpen ? "Hide chatbot" : "Open chatbot"}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 10h8m-8 4h5m8-2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      </button>
-    </div>
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 10h8m-8 4h5m8-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </button>
+      )}
+    </>
   );
 }
